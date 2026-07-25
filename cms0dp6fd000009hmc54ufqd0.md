@@ -1,7 +1,7 @@
 ---
 title: "Base44 App Store Approval: The Rejection Checklist"
 seoTitle: "Base44 App Store Approval: The Rejection Checklist"
-seoDescription: "Every guideline that rejects a Base44 app, 4.2, 4.8, 3.1.1, 3.1.2 and 5.1.1, with the exact fix for each, so approval lands on the first submission."
+seoDescription: "Every guideline that rejects a Base44 app, 4.2, 4.8, 3.1.1, 3.1.2 and 5.1.1, with the exact fixes, so approval lands on the first submission."
 datePublished: 2026-07-25T13:02:05.279Z
 cuid: cms0dp6fd000009hmc54ufqd0
 slug: base44-app-store-approval-the-rejection-checklist
