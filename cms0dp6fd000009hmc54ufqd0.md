@@ -61,9 +61,21 @@ const isDespia = navigator.userAgent.toLowerCase().includes('despia')
 if (isDespia) {
     despia('successhaptic://')
     despia(`setonesignalplayerid://?user_id=${accountId}`)
-    await despia('setvault://?key=confirmAction&value=yes&locked=true')
+
+    // locked=true gates the read, not the write
+    await despia(`setvault://?key=sessionToken&value=${token}&locked=true`)
+}
+
+// next launch: Face ID or Touch ID prompts before the value comes back
+try {
+    const { sessionToken } = await despia('readvault://?key=sessionToken', ['sessionToken'])
+    resumeSession(sessionToken)
+} catch {
+    // key absent, first launch
 }
 ```
+
+The vault is worth understanding rather than pasting. It is encrypted key-value storage backed by iCloud Key Value Storage on iOS and App Backup on Android, so it survives uninstall and reinstall, and the biometric prompt fires when you read a locked key, never when you write it. A write with no matching read shows the reviewer nothing.
 
 Push alone changes the review conversation, because an app that reaches users between sessions is doing something a bookmark cannot. Native transitions, safe areas, sheets, and haptics do the rest of the work: the app has to read as an app when the reviewer opens it, not just pass a feature checklist. The [4.2 and 4.8 pillar](https://blog.despia.com/base44-app-store-rejection-guideline-4-2-and-4-8) covers what reviewers actually check.
 
