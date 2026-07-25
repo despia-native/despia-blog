@@ -5,7 +5,7 @@ seoDescription: "Every guideline that rejects a Lovable app, 2.1, 4.2, 4.8, 3.1.
 datePublished: 2026-07-25T18:18:34.693Z
 cuid: cms0p06r400000ahwdtleex5p
 slug: lovable-app-store-approval-the-rejection-checklist
-cover: https://cdn.hashnode.com/uploads/covers/67f0239ff4f5a0b7b4a852c4/980bebf4-5902-48ea-b65a-03bea1f6db72.png
+cover: https://cdn.hashnode.com/uploads/covers/67f0239ff4f5a0b7b4a852c4/24f7b1bc-75e7-4625-95b8-f32215deeb9e.png
 tags: android-app-development, ios, android, webapp, pwa, ios-app-development, appstore, lovable, appreview
 
 ---
