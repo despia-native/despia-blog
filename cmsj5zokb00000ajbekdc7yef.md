@@ -12,7 +12,7 @@ tags: android-app-development, mobile-app-development, android, google-play, mob
 
 Google Play is usually described as the easier store. For a Base44 builder shipping their first app it now takes longer than iOS, and not for technical reasons. A rule for new personal accounts adds a fixed two-week wait that no amount of preparation removes, and almost nobody finds out until they are ready to launch.
 
-**Short answer.** Base44 does not produce an Android bundle, so converting means running your existing Base44 frontend inside a native runtime that builds and signs one. Base44 stays the source of truth, you keep one codebase, and the app gets FCM push, fingerprint unlock and Play Billing. Then a Play Console account is $25 once, you complete a store listing, content rating, target audience and Data safety declarations, and you run a closed test. If your account is a personal one created after 13 November 2023, you need 12 testers opted in for 14 consecutive days before you can even apply for production access.
+**Short answer.** Base44 can generate a Google Play ready AAB from the Mobile app tab, but what it generates is a secure WebView wrapper that opens only your app's URL, with no native push, no full offline mode, no HealthKit and no built-in Play Billing yet. If you need those while keeping Base44 as the source of truth, converting means running the same Base44 frontend inside a native runtime that ships a signed bundle with the capabilities added underneath. Either way a Play Console account is $25 once, you complete a store listing, content rating, target audience and Data safety declarations, and you run a closed test. If your account is a personal one created after 13 November 2023, you need 12 testers opted in for 14 consecutive days before you can even apply for production access.
 
 This guide covers both halves: the conversion, then the submission. Start the tester clock first and finish the app while it runs.
 
@@ -40,7 +40,9 @@ Your package name is permanent once an app exists under it, and it must match wh
 
 ## What Base44 gives you and what it does not
 
-Base44 publishes to a URL. Its built-in store publishing produces, per [Base44's own documentation](https://docs.base44.com/documentation/building-your-app/uploading-to-app-stores), a web view with no push notifications and no full offline support.
+Base44 does generate store files. From the Mobile app tab you can produce a Google Play ready AAB, download it, and upload it to a Play Console release. So the question is not whether you can get a bundle. It is what is inside it.
+
+Per [Base44's own documentation](https://docs.base44.com/documentation/building-your-app/uploading-to-app-stores), that bundle runs your published app inside a secure web view, a lightweight native wrapper that opens only your app's URL, and it does not currently support native-only features such as push notifications or full offline mode. HealthKit and built-in Play Billing are not there yet either. The upside their docs also name is real: publish a content or design change in Base44 and it appears in the app without a new store version.
 
 If your app takes no payments, sends no notifications and touches no hardware, that is free and already in your dashboard. Everything below is for the other case: a signed app bundle with native capability, built from the same Base44 project through a native runtime.
 
@@ -148,7 +150,7 @@ That matters more on Android than people expect: Samsung, Huawei, Xiaomi and One
 
 ## Common questions
 
-**Can Base44 publish to Google Play on its own?** It has built-in publishing that produces a web view its own docs describe as having no push and no full offline support. Anything beyond that needs a native runtime or a rebuild.
+**Can Base44 publish to Google Play on its own?** Yes. The Mobile app tab generates a Google Play ready AAB. What it does not give you, per Base44's own docs, is native push, full offline mode, HealthKit or built-in Play Billing, so the question is whether your app needs any of those.
 
 **Do I really need 12 testers?** Only for personal accounts created after 13 November 2023. D-U-N-S-verified organization accounts are exempt, and internal testing does not count.
 
