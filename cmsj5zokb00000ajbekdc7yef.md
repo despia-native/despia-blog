@@ -48,7 +48,7 @@ If your app takes no payments, sends no notifications and touches no hardware, t
 
 **What converting actually means here.** Nothing is regenerated and nothing is rewritten. Your Base44 project stays exactly where it is and keeps being the thing you edit. The runtime ships it as a signed Android bundle and hands the web layer the device, so push, fingerprint unlock and Play Billing become available from the code you already have. One codebase, not two, and web changes keep going out over the air with no new upload.
 
-The alternative, having an AI regenerate your frontend as a React Native project, is a real option and it is also a second codebase to maintain alongside Base44. That trade is covered in [the full conversion guide](https://blog.despia.com/convert-base44-to-mobile-app).
+The alternative, having an AI regenerate your frontend as a React Native project, is a real option and it is also a second codebase to maintain alongside Base44. That trade is covered in [the full conversion guide](https://blog.despia.com/convert-base44-to-a-mobile-app-the-full-guide).
 
 ## Add the features worth testing
 
