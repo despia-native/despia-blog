@@ -10,21 +10,23 @@ tags: android-app-development, ios, android, ios-app-developer, ios-app-developm
 
 ---
 
-Base44 builds web apps. It does not produce an iOS binary or an Android bundle, so every Base44 builder who wants an App Store listing eventually goes looking for the missing step. This is that step.
+Base44 will generate store files for you. What it generates is a secure WebView wrapper that opens only your app's URL, which is enough for some apps and nowhere near enough for others. The real decision is what you do when it is not enough.
 
-**Short answer.** You have two real options. Regenerate your frontend as a React Native project, which leaves you maintaining two codebases. Or keep Base44 as the source of truth and run that frontend inside a native runtime, which ships a signed binary with native push, in-app purchases, biometrics and background GPS, and pushes web changes over the air with no resubmission.
+**Short answer.** Base44's built-in mobile app is a WebView wrapper with no native push, no full offline mode, no HealthKit and no built-in StoreKit or Play Billing yet. If your app needs none of those, use it. If it does, you have two options: regenerate your frontend as a React Native project, which leaves you maintaining two codebases, or keep Base44 as the source of truth and run that frontend inside a native runtime, which ships a signed binary with those capabilities added underneath and pushes web changes over the air with no resubmission.
 
 ## What Base44 actually gives you
 
 A Vite React frontend and a hosted backend: entities, auth, Deno functions, file storage, realtime, reached through `@base44/sdk`.
 
-Three things worth knowing before you build on top of it. The code export is frontend only, so entities and backend logic stay on Base44's servers and the exported `.env` still points back at them. The CLI (`npx base44`) has an `eject` command and no mobile build target. And Base44's own store publishing produces, per [their documentation](https://docs.base44.com/documentation/building-your-app/uploading-to-app-stores), a web view with no push and no full offline support.
+Two things worth knowing before you build on top of it. The code export is frontend only, so entities and backend logic stay on Base44's servers and the exported `.env` still points back at them. And the CLI (`npx base44`) has an `eject` command and no mobile build target.
 
-If your app takes no payments, sends no notifications and touches no hardware, use that built-in publishing. It is free and already in your dashboard.
+Store files are a different matter, and this is where most posts on this topic are out of date. Base44's Mobile app tab scans your app against Apple and Google guidelines and generates what you submit, including a Google Play ready AAB. Per [their documentation](https://docs.base44.com/documentation/building-your-app/uploading-to-app-stores), that build runs your published app inside a secure web view that opens only your app's URL, and it does not currently support native-only features such as push notifications or full offline mode. HealthKit and built-in billing are not there yet either. In exchange, content and design changes you publish in Base44 appear in the app without a new store version.
+
+So if your app takes no payments, sends no notifications and touches no hardware, use it. It is already in your dashboard and it is the right tool for that app.
 
 ## The three routes
 
-**Base44's built-in publishing.** Free and fine for a simple app. No push, no in-app purchases, no device access.
+**Base44's built-in mobile app.** Generates the store files, including a Play ready AAB, and updates content over the air. A WebView wrapper, so no native push, no full offline, no HealthKit, no built-in billing. Right choice for a simple app.
 
 **Rebuild in React Native.** An agent regenerates your frontend as native views. Real native rendering, and a second codebase: your Base44 app still exists, you are still prompting it, and the generated project never hears about it. Right call if rendering is your product, or if you have a developer who wants to own a native codebase.
 
@@ -187,7 +189,7 @@ Where a native runtime is not the answer: a game loop, real-time 3D, AR, per-fra
 
 ## Common questions
 
-**Does Base44 build native mobile apps?** No. Its built-in publishing produces a web view that its own docs describe as having no push and no full offline support.
+**Does Base44 build native mobile apps?** It generates store files, including a Play ready AAB, but what runs inside them is a secure web view of your published app. Its own docs list the gaps: no native push, no full offline mode. HealthKit and built-in billing are not there yet either.
 
 **Can I convert a Base44 app to iOS only?** Yes. Licensing is per app per OS. Most people ship both, because the same web codebase already serves both.
 
