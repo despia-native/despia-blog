@@ -28,7 +28,7 @@ Everything below is for the other case: a real signed binary with native capabil
 
 **What converting actually means here.** Nothing is regenerated and nothing is rewritten. Your Base44 project stays exactly where it is and keeps being the thing you edit. The runtime ships it as a signed iOS binary and hands the web layer the device, so push, biometrics and purchases become available from the code you already have. You end up with one codebase, not two, and web changes keep going out over the air with no resubmission.
 
-The alternative, having an AI regenerate your frontend as a React Native project, is a real option and it is also a second codebase to maintain alongside Base44. That trade is covered in [the full conversion guide](https://blog.despia.com/convert-base44-to-mobile-app).
+The alternative, having an AI regenerate your frontend as a React Native project, is a real option and it is also a second codebase to maintain alongside Base44. That trade is covered in [the full conversion guide](https://blog.despia.com/convert-base44-to-a-mobile-app-the-full-guide).
 
 ## Enrollment, and why to start it today
 
