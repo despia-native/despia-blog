@@ -12,13 +12,15 @@ tags: ios, ios-app-developer, mobile-app, ios-app-development, appstore, base44
 
 Apple does not care that your app was built in Base44. It cares whether the binary does something Safari does not, whether the listing is honest, and whether a reviewer can get inside it. Almost every rejection a Base44 builder gets is one of those three.
 
-**Short answer.** Base44 does not produce an iOS binary, so converting means running your existing Base44 frontend inside a native runtime that builds and signs one. Base44 stays the source of truth, you keep one codebase, and the app gets native push, Face ID and StoreKit purchases. Then you need an Apple Developer Program membership in your own name at $99 a year, a bundle ID with the right capabilities, a listing with device screenshots and accurate purpose strings, App Privacy answers that match reality, and a working demo account. Review is usually 24 to 48 hours.
+**Short answer.** Base44 can generate store files for the App Store, but what it generates is a secure WebView wrapper that opens only your app's URL, with no native push, no full offline mode, no HealthKit and no built-in StoreKit yet. If you need those while keeping Base44 as the source of truth, converting means running the same Base44 frontend inside a native runtime that ships a signed binary with the capabilities added underneath. Either way you need an Apple Developer Program membership in your own name at $99 a year, a bundle ID with the right capabilities, a listing with device screenshots and accurate purpose strings, App Privacy answers that match reality, and a working demo account. Review is usually 24 to 48 hours.
 
 This guide covers both halves: the conversion, then the submission.
 
 ## What Base44 gives you and what it does not
 
-Base44 publishes your app to a URL. Its built-in store publishing produces, per [Base44's own documentation](https://docs.base44.com/documentation/building-your-app/uploading-to-app-stores), a web view with no push notifications and no full offline support.
+Base44 does generate store files. From the Mobile app tab you can scan your app against Apple's guidelines and produce the files you submit from your own Apple developer account. So the question is not whether you can get a build. It is what is inside it.
+
+Per [Base44's own documentation](https://docs.base44.com/documentation/building-your-app/uploading-to-app-stores), that build runs your published app inside a secure web view, a lightweight native wrapper that opens only your app's URL, and it does not currently support native-only features such as push notifications or full offline mode. HealthKit and built-in StoreKit are not there yet either. The upside their docs also name is real: publish a content or design change in Base44 and it appears in the app without a new store version.
 
 If your app takes no payments, sends no notifications and touches no hardware, use that and stop reading. It is free and already in your dashboard.
 
@@ -156,7 +158,7 @@ Native configuration still needs a build and a review. Apple also runs an annual
 
 ## Common questions
 
-**Can Base44 publish to the App Store on its own?** It has built-in publishing that produces a web view its own docs describe as having no push and no full offline support. For anything beyond that you need a native runtime or a rebuild.
+**Can Base44 publish to the App Store on its own?** Yes. It generates the files you submit from your own Apple developer account. What it does not give you, per Base44's own docs, is native push, full offline mode, HealthKit or built-in StoreKit, so the question is whether your app needs any of those.
 
 **Do I need a Mac or Xcode?** No. Builds, signing and submission run from the browser. You need your own Apple Developer account because the app ships under your name.
 
