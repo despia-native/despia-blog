@@ -10,13 +10,13 @@ tags: webapp, pwa, web-api, indexeddb, lovable
 
 ---
 
-%[https://youtu.be/dSqgoAYM6qw?si=aSEgJlo-wH8iy4K9] 
+%[https://youtu.be/dSqgoAYM6qw] 
 
 Most people try this once, in the wrong order. They flip Offline Support to PWA in Despia, rebuild, put the phone in airplane mode, and the app opens to the native network error page. Or it opens, shows the shell, and then spins forever on an empty screen. Or worse: it works offline, and now none of their updates reach users ever again.
 
 Two things are going on. Caching the app and running the app offline are separate problems, and a service worker that solves the first one badly will quietly break your deployments. A worker keeps your HTML, JavaScript and CSS available without a network. It does nothing for the Lovable Cloud queries, edge functions and third party APIs your app calls the moment it boots. And if it answers every request from its stored copy, your users are pinned to whatever version they installed first.
 
-There is a working reference for all of this: [despia-native/lovable-service-worker-sample](https://github.com/despia-native/lovable-service-worker-sample) is a small Lovable todo app with email login, a hand-written worker, an IndexedDB mirror and an outbox. It is open source under Apache 2.0, it took about 42 minutes of arguing with the AI to get right, and you can hand the repository URL to Lovable as a reference instead of repeating that. This post is the reasoning behind it.
+The video above is the whole build, unedited: prompting Lovable, catching the worker serving stale code, arguing it back into shape, and testing it on a real phone. The code is open source at [despia-native/lovable-service-worker-sample](https://github.com/despia-native/lovable-service-worker-sample), a small Lovable todo app with email login, a hand-written worker, an IndexedDB mirror and an outbox, under Apache 2.0. Getting it right took about 42 minutes even with good documentation, and you can hand that repository URL to Lovable as a reference instead of repeating the exercise. This post is the reasoning behind it.
 
 ## What the Despia offline toggle actually does
 
@@ -289,6 +289,8 @@ const isDespia = navigator.userAgent.toLowerCase().includes('despia')
 This is the part that saves the money. Service workers, the Cache API and IndexedDB are web platform APIs. The Despia runtime runs the same engine your browser runs, so it does not add behaviour to them and it cannot repair them. Works in the browser, works in the PWA, works in the native build. Fails anywhere earlier and it fails everywhere later, except that in the binary the failure hides behind a native error screen and looks like a runtime bug.
 
 So the order is fixed. Step one, prove updates still reach users. Step two, prove the web app works offline as an installed PWA. Step three, prove the native build works offline. People who jump to step three burn hundreds of dollars in AI tokens debugging something they could have excluded in ten minutes.
+
+If you want to watch this happen rather than read it, this is most of the video above, including the parts where it does not work.
 
 **Step one: prove over-the-air updates still work, online.**
 
