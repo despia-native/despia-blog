@@ -10,6 +10,8 @@ tags: webapp, pwa, web-api, indexeddb, lovable
 
 ---
 
+%[https://youtu.be/dSqgoAYM6qw?si=aSEgJlo-wH8iy4K9] 
+
 Most people try this once, in the wrong order. They flip Offline Support to PWA in Despia, rebuild, put the phone in airplane mode, and the app opens to the native network error page. Or it opens, shows the shell, and then spins forever on an empty screen. Or worse: it works offline, and now none of their updates reach users ever again.
 
 Two things are going on. Caching the app and running the app offline are separate problems, and a service worker that solves the first one badly will quietly break your deployments. A worker keeps your HTML, JavaScript and CSS available without a network. It does nothing for the Lovable Cloud queries, edge functions and third party APIs your app calls the moment it boots. And if it answers every request from its stored copy, your users are pinned to whatever version they installed first.
