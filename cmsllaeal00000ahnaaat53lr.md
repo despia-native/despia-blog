@@ -10,9 +10,13 @@ tags: webapi, webapp, pwa, indexeddb, base44
 
 ---
 
+%[https://youtu.be/ebflykFHCkg] 
+
 Most people try this once, in the wrong order. They flip Offline Support to PWA in Despia, rebuild, put the phone in airplane mode, and the app opens to the native network error page. Or it opens, shows the shell, and then spins forever on an empty screen. Or worse: it works offline, and now none of their updates reach users ever again.
 
 Two things are going on. Caching the app and running the app offline are separate problems, and a service worker that solves the first one badly will quietly break your deployments. A worker keeps your HTML, JavaScript and CSS available without a network. It does nothing for the entity reads, backend functions and third party APIs your app calls the moment it boots. And if it answers every request from its stored copy, your users are pinned to whatever version they installed first.
+
+The video above is the whole build: prompting Base44, catching the first attempt failing on a real phone, correcting it, and testing the same app as a PWA and as a native build. The code is open source at [despia-native/base44-service-worker-sample](https://github.com/despia-native/base44-service-worker-sample), a small task app with email login, a hand-written worker, an IndexedDB mirror and an outbox. You can hand that repository URL to Base44 as a reference. This post is the reasoning behind it.
 
 ## Where the service worker goes
 
@@ -164,7 +168,19 @@ document.addEventListener('visibilitychange', () => {
 checkForUpdate()
 ```
 
-Skip registration entirely in the Base44 editor preview, and unregister anything already installed there. The preview is not your deployment, and a worker installed against it will fight the editor's live reload and confuse every test you run afterwards.
+Skip registration entirely in the Base44 editor preview, and unregister anything already installed there. The reliable test is not the hostname, it is whether you are running inside a frame:
+
+```javascript
+function isEditorPreview() {
+    try {
+        return window.self !== window.top
+    } catch {
+        return true // cross-origin frame, treat as preview
+    }
+}
+```
+
+The preview is not your deployment, and a worker installed against it will fight the editor's live reload and confuse every test you run afterwards.
 
 Do not hand-write a precache list of hashed filenames. The build renames them every time, so a list written today points at files that will not exist next week, `install` fails, and the worker never activates. Precache the shell and the offline page, and let everything else fill in as it is visited.
 
@@ -192,64 +208,79 @@ Use IndexedDB for records. `localStorage` is fine for a token and a small user o
 
 ## The write path: optimistic locally, queued, flushed on reconnect
 
-Every offline write is two operations. Update the local copy so the UI responds immediately, and record the intent so it can be replayed later. Keep three IndexedDB stores for this: the mirrored entity, an `outbox` of queued jobs, and `tombstones` for deletes.
+Every offline write is two operations. Update the local copy so the UI responds immediately, and record the intent so it can be replayed later. Keep the mirrored entity, an `outbox` of queued jobs, and tombstones for deletes.
 
 ```javascript
-async function saveTodo(todo) {
-    const row = { ...todo, updated_at: new Date().toISOString(), pending: true }
+const LOCAL_FIELDS = ['_key', '_entity', '_pending', '_deleted', '_localId']
 
-    await localTodos.put(row)
-    await outbox.add({ type: 'create', row })
-
-    flushOutbox()
-    return row
+function stripLocal(row) {
+    const clean = { ...row }
+    LOCAL_FIELDS.forEach(f => delete clean[f])
+    return clean
 }
 
-async function runJob(job) {
-    const { pending, ...payload } = job.row || {}
+async function create(values) {
+    const id = `local_${Date.now().toString(36)}`
+    const now = new Date().toISOString()
 
-    if (job.type === 'create') return base44.entities.Todo.create(payload)
-    if (job.type === 'update') return base44.entities.Todo.update(job.id, payload)
-    return base44.entities.Todo.delete(job.id)
+    await putRecord(entityName, { ...values, id, created_date: now, updated_date: now, _pending: true })
+    await outboxAdd({ jobId: uid(), entity: entityName, op: 'create', id, values: stripLocal(values) })
+
+    flush()
 }
 
-async function flushOutbox() {
-    if (!navigator.onLine) return
+async function flush() {
+    if (flushing || !navigator.onLine) return
+    flushing = true
 
-    for (const job of await outbox.all()) {
-        try {
-            await runJob(job)
-            await outbox.remove(job.key)
-            await settleJob(job)
-        } catch (error) {
-            // never reached the server, keep it queued and try again later
-            if (isNetworkFailure(error)) return
+    try {
+        for (const job of await jobsFor(entityName)) {
+            try {
+                if (job.op === 'create') {
+                    const created = await api.create(job.values)
+                    await deleteRecord(entityName, job.id)   // drop the temporary local row
+                    await putRecord(entityName, created)
+                } else if (job.op === 'update') {
+                    await putRecord(entityName, await api.update(job.id, job.values))
+                } else {
+                    await api.delete(job.id)
+                    await deleteRecord(entityName, job.id)
+                }
+                await outboxDelete(job.jobId)
+            } catch (err) {
+                const rejected = typeof err?.status === 'number' && err.status >= 400 && err.status < 500
 
-            // server said no, retrying will not change that
-            await outbox.remove(job.key)
-            await revertJob(job)
-            reportSyncError(error)
+                if (!rejected) break // network failure, keep the job queued
+
+                await outboxDelete(job.jobId)
+                await revert(job)
+                emitError(err?.message || 'A change could not be saved and was undone.')
+            }
         }
+    } finally {
+        flushing = false
     }
 }
 
-window.addEventListener('online', flushOutbox)
+window.addEventListener('online', flushAll)
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') flushOutbox()
+    if (document.visibilityState === 'visible') flushAll()
 })
 ```
 
-Five details separate a sync layer from a data loss bug.
+Six details separate a sync layer from a data loss bug.
 
-Strip your local-only fields before sending. A `pending` flag that reaches the entity is a field the schema does not have, and the write is rejected. You will spend an hour blaming the queue.
+Strip your local-only fields before sending. Prefix them so this is mechanical rather than remembered: `_pending`, `_deleted`, `_localId`. A `_pending` flag that reaches the entity is a field the schema does not have, and the write is rejected. You will spend an hour blaming the queue.
 
-Separate a transport failure from a server rejection. A dropped connection should keep the job queued. A write your entity permissions refuse will never succeed, so drop it, undo the local optimistic change, and tell the user. An offline write is a request, not a guarantee, and the UI should say pending until the server has accepted it.
+Separate a transport failure from a server rejection, and use the status code rather than a string match on the error. A 4xx is your entity permissions or your schema refusing the write, and it will never succeed on retry, so drop the job, undo the local optimistic change, and tell the user. Anything else is the network, so stop and keep the queue intact for the next attempt. An offline write is a request, not a guarantee, and the UI should say pending until the server has accepted it.
+
+A row created offline has no server id, so give it a local one, and when the create finally lands, delete the temporary row and store the server's version. Skip that and you get the same task twice.
 
 Flush on `visibilitychange` as well as the `online` event. A phone that was asleep in a lift comes back through resume, and does not always fire a connectivity event.
 
-Queue deletes explicitly and keep a tombstone until the delete lands, or the row reappears on the next pull.
+Queue deletes explicitly and write a tombstone, a row flagged `_deleted` that your list filters out, until the delete lands. Without it the row reappears on the next pull.
 
-For conflicts, compare `updated_at` and let the newer write win, with one exception: a pending local write always wins over the server copy, because it has not been sent yet and dropping it would lose the user's work.
+For conflicts, compare `updated_date` and let the newer write win, with one exception: a pending or deleted local row always wins over the server copy, because it has not been sent yet and dropping it would lose the user's work. Base44 timestamps entities with `created_date` and `updated_date`, so use those field names rather than inventing your own.
 
 ## Auth, and why the app can look signed out when it is not
 
@@ -294,7 +325,9 @@ const isDespia = navigator.userAgent.toLowerCase().includes('despia')
 
 This is the part that saves the money. Service workers, the Cache API and IndexedDB are web platform APIs. The Despia runtime runs the same engine your browser runs, so it does not add behaviour to them and it cannot repair them. Works in the browser, works in the PWA, works in the native build. Fails anywhere earlier and it fails everywhere later, except that in the binary the failure hides behind a native error screen and looks like a runtime bug.
 
-So the order is fixed. Step one, prove updates still reach users. Step two, prove the web app works offline as an installed PWA. Step three, prove the native build works offline. People who jump to step three burn hundreds of dollars in AI tokens debugging something they could have excluded in ten minutes.
+So the order is fixed. Step one, prove updates still reach users. Step two, prove the web app works offline as an installed PWA. Step three, prove the native build works offline. People who jump to step three burn hundreds of dollars in AI tokens debugging something they could have excluded in ten minutes. Worse, they debug the wrong layer: hand an AI a failure from inside a native binary and it will confidently tell you the Xcode project is misconfigured, when the actual fault is a worker that never cached anything.
+
+Before any of that, pick your model. Base44 lets you choose, and a service worker is exactly the kind of task where that matters, since it is one file that has to be right in several ways at once. Use the strongest model available to you and put it in build mode. Tools that decide the model for you are where these implementations usually go wrong.
 
 **Step one: prove over-the-air updates still work, online.**
 
@@ -308,7 +341,7 @@ Then change something obvious and publish. The theme colour is the crudest and f
 
 **You will trap yourself, and that is normal.** The first bad worker you ship installs itself on your own machine, and from then on your browser keeps serving the old copy no matter how many times you fix the code and reload. Adding a `?cachebust=123` query parameter sometimes works. Opening a 404 route sometimes works. Often neither does. The practical answer is a second browser and a private window: Safari when you have been testing in Chrome, then a fresh incognito window each time. Clearing the cache properly is workable on macOS and Windows, awkward on Android, and genuinely painful on iOS. Assume you will need clean sessions and stop fighting it.
 
-When the worker is wrong, tell the AI exactly what you observed. Both of these move it forward:
+When something is wrong, tell the AI exactly what you observed, in plain language, including where you observed it. These two cover the two failures you will actually hit:
 
 ```text
 I made the update to pink and if I reload my app, the update did not go through.
@@ -318,9 +351,11 @@ offline, serve cache, but once online make a new latest copy.
 ```
 
 ```text
-I opened a private Safari window and tested the colour change. The app is still green
-and does not show the updates I made, so it is infinitely stuck on old page code, which
-means the service worker is corrupted. Please fix it.
+I tested it as a PWA on iOS and I get an error saying Safari cannot load the website
+while offline. That means your service worker does not cache the data for offline PWA
+usage. I need it to load the latest version if the network is online, and load cache
+only if the network is offline. Never show old cache when online, and show the latest
+cache when offline.
 ```
 
 Attach the network tab screenshot. Ask for a plan first when you are two rounds in and it is still wrong, so the model reads the whole registration path instead of patching one file. And read the plan before approving it: a common AI escape route is to replace the worker with a cleanup worker that unregisters itself, which does guarantee fresh code and also deletes the offline support you asked for.
@@ -329,17 +364,35 @@ Do not take "I tested it and it works" from an AI tool as a result. Their browse
 
 **Step two: install it as a PWA and go offline.**
 
+You cannot test offline behaviour in a Safari tab on iOS, and testing it inside a native binary is the hardest environment to debug. The installed PWA is the middle rung: no Xcode, no Android Studio, no store review, and it exercises exactly the same worker. If your app is not meant to ship as a PWA, ask Base44 to make it one anyway and strip it later.
+
 Open your published URL on a real phone and add it to the home screen. If it opens with an address bar at the top or a share and reload bar at the bottom, it opened as a browser tab, not a PWA, and you are missing a web app manifest and the Apple specific head tags. Fix that even if you never intend to ship a PWA, because you need it to run this test. If it still opens wrong after the fix, delete it from the home screen, reload the page, and add it again, waiting a couple of seconds before tapping add.
 
 Then use the app online first. Load the screens that matter, sign in, create a record. That is what fills the caches and writes rows into IndexedDB, and a worker with an empty cache is indistinguishable from no worker.
 
-Now turn off Wi-Fi and cellular data separately in system settings. Not airplane mode, since some devices keep Wi-Fi alive in it and the test passes for the wrong reason. Force quit the installed app and open it cold, because a warm relaunch proves nothing. You want to see: the app opens, your offline indicator appears, your existing records are on screen, a new record can be created and shows as pending. Turn the radios back on and watch that record sync.
+Now turn off Wi-Fi and cellular data separately in system settings. Not airplane mode, since some devices keep Wi-Fi alive in it and the test passes for the wrong reason.
+
+Your offline indicator lighting up proves nothing. It is interface, rendered by an app that is already open and already running. Force quit from the app switcher and launch it cold. That is the only version of this test that means anything, and it is where a worker that looked fine in the network tab will show you an address bar and a message about not being able to load the page.
+
+What you want to see: the app opens, your existing records are on screen, and a new record can be created and shows as pending. Then turn the radios back on, watch the pending state clear, and reload the app on your desktop to confirm the record actually reached the database.
 
 **Step three: the native build.**
 
-Only now flip Offline Support to PWA in Despia, bump the version code, publish, and install the new build. Run the same sequence: use it online, kill both radios, force quit, cold launch past the native splash screen, read your data, write a record, reconnect and watch it sync. If steps one and two passed, this one passes, because it is the same web app with the same caches inside a native shell.
+Only now flip Offline Support to PWA in Despia, mark the version bump as a medium update, publish, and install the new build from TestFlight or internal testing. A deployment takes a few minutes, occasionally up to thirty. Run the same sequence: use it online, kill both radios, force quit, cold launch past the native splash screen, read your data, write a record, reconnect and watch it sync. If steps one and two passed, this one passes, because it is the same web app with the same caches inside a native shell.
 
 The one thing that genuinely differs is the very first launch. A hosted app has to be opened once with a working connection before the worker can install and precache anything, so a user who installs from the store on a plane has nothing to serve.
+
+## Wrapping it as a native app, and why the built-in publishing will not do
+
+Base44's own mobile publishing is a thin wrapper. It puts your web app in a binary and that is the extent of it: no in-app purchases, no StoreKit or Android billing, no push provider, no iCloud key value storage or Android backup for data that survives an uninstall. Most relevant here, it does not register app bound domains on iOS, which is what a service worker needs in order to register inside a native binary at all. Offline support is an advanced feature, and a minimal wrapper is the wrong tool for it.
+
+Two options actually work.
+
+Capacitor is free and open source. You will need a Mac, Xcode, and Android Studio, and you will be archiving projects, editing plist values and the Android manifest by hand. If that is comfortable, it costs nothing but time.
+
+Despia is the paid one, and it is ours, so weigh that accordingly. It exposes the same native capabilities without a Mac or a CLI: copy your Base44 project link into Settings > Configuration > Dynamic App Source as the app start URL, set Offline Support to PWA, then under Versioning choose a medium build version update, confirm, and publish. That is the app bound domain registration and the native offline provisioning done as a setting rather than an Xcode session.
+
+One thing you will have to fix by hand either way: safe areas. Wrapped web content runs edge to edge, so your header slides under the status bar and the notch. Pull the safe area documentation, paste it into Base44, and let it apply the padding utilities. That is a web change, so it ships over the air with your next publish and needs no resubmission.
 
 ## The pitfalls that generate the most support tickets
 
@@ -360,6 +413,8 @@ self.addEventListener('activate', event => {
 ```
 
 **A cached document pointing at deleted assets.** If the HTML is cached and the hashed JavaScript it references is not, the app opens to a white page. Network-first documents plus a versioned cache prevents it.
+
+**iOS holding on to an old registration.** Safari caches service worker registrations aggressively. If you installed an earlier version to the home screen, a new worker may not take, and deleting the icon and adding it again is faster than any amount of debugging.
 
 **Testing in the Base44 editor preview.** The preview is not your deployment. Scope, headers and worker behaviour only mean anything on the published URL that Despia actually loads.
 
@@ -388,7 +443,8 @@ Service worker, always fresh online, cache only as an offline fallback:
   clients.claim on activate.
 - Call registration.update() on load, focus, online and visibilitychange, and reload the page on
   controllerchange so a new worker takes effect immediately.
-- Do not register the worker in the Base44 editor preview, and unregister any worker found there.
+- Do not register the worker in the Base44 editor preview (detect it with window.self !== window.top),
+  and unregister any worker found there.
 - Add a web app manifest and Apple specific head tags so the app installs as a real PWA.
 
 Local data layer, because the backend is unreachable offline:
@@ -396,12 +452,14 @@ Local data layer, because the backend is unreachable offline:
   refresh from Base44 in the background and merge.
 - Never block first render on a network call. No await on an entity read or base44.auth.me() before
   something is on screen. Cache the user object locally and render from it when offline.
-- Writes are optimistic: update the local row with a pending flag and queue a job in an IndexedDB outbox.
-- Flush the outbox on the window 'online' event and on visibilitychange. Strip local-only fields such as
-  pending before sending. Keep a job queued on a network failure. On a server rejection, drop the job,
-  revert the local change and surface an error, since a permissions failure never succeeds on retry.
-- Queue deletes explicitly with a local tombstone so deleted rows do not come back on the next pull.
-- Resolve conflicts on updated_at, newest write wins, except that a pending local write always wins.
+- Writes are optimistic: update the local row with a _pending flag and queue a job in an IndexedDB outbox.
+- Give rows created offline a temporary local id, and when the create lands, delete the temporary row and
+  store the server's version so the record does not appear twice.
+- Flush the outbox on the window 'online' event and on visibilitychange. Strip local-only fields (_pending,
+  _deleted, _localId) before sending. On a 4xx, drop the job, revert the local change and surface an error,
+  since a permissions or schema failure never succeeds on retry. On anything else, stop and keep the queue.
+- Queue deletes explicitly and write a _deleted tombstone so deleted rows do not come back on the next pull.
+- Resolve conflicts on updated_date, newest write wins, except that a pending local row always wins.
 - Show a clear pending or offline indicator in the UI.
 - Disable online-only features (backend functions, AI calls, payments, email) with an explanation rather
   than letting them fail silently.
