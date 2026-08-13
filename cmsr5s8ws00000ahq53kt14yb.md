@@ -10,11 +10,15 @@ tags: supabase, lovable
 
 ---
 
-Lovable Cloud is the fastest way to get a working backend behind an app you described in a chat window. It is also a backend you do not hold the keys to. At some point you want the database, the auth users, the storage bucket and the Stripe webhook in a project on your own Supabase account, with your own billing, your own region and a connection string you can point psql at.
+Lovable Cloud runs on Supabase, but the project is not yours. This guide moves your app onto a Supabase account you own: schema, data, users with working passwords, files and Stripe webhooks, with no lost events. You paste 9 prompts, your AI tool does the work, and the same app ships to the App Store afterwards.
 
-This post walks that migration end to end. The end state: the same app, running against your own Supabase project, with every user ID unchanged, every password still working, every file in place, and not one Stripe event lost along the way.
+Lovable Cloud is the fastest way to get a working backend behind an app you described in a chat window. It is also a backend you do not hold the keys to. At some point you want the database, the auth users, the storage bucket and the Stripe webhook in a project on your own Supabase account, with your own billing and your own region.
 
-All of it is packaged as an open source agent skill: [github.com/despia-native/lovable-to-supabase](https://github.com/despia-native/lovable-to-supabase). It installs a runbook plus 7 scripts into your repo and drives the whole thing with your agent. You can also just read the runbook and run the commands yourself.
+This post walks that migration end to end, and you do not need to be a developer to follow it. You will not type a single command. Every step is a prompt you paste into one of 2 windows: Lovable chat, or an AI coding tool running on your computer. The tool does the work, you move the messages between them.
+
+The end state: the same app, running against your own Supabase project, with every user ID unchanged, every password still working, every file in place, and not one Stripe event lost along the way.
+
+Everything here is packaged as an open source agent skill: [github.com/despia-native/lovable-to-supabase](https://github.com/despia-native/lovable-to-supabase). It installs a runbook plus 7 scripts into your project, and your AI tool runs them for you.
 
 ## What you are actually moving
 
@@ -22,151 +26,107 @@ A Lovable Cloud project is Supabase underneath, which is the good news. The piec
 
 | Piece | How it moves |
 | --- | --- |
-| Schema (tables, enums, functions, triggers, RLS policies) | `pg_dump` of the public schema, plus auth triggers and storage policies |
-| Data | Data dump, `auth.users` and `auth.identities` first so user IDs stay stable |
-| Auth users | Same dump. Bcrypt hashes travel, so passwords keep working |
-| Storage buckets and files | Copied object by object through service-role clients |
-| Edge functions | Redeployed from your repo with the Supabase CLI |
-| Cron jobs | Regenerated as `cron.schedule` statements with the new URLs |
-| Stripe webhooks | Second endpoint runs in parallel, then the old one is retired |
+| Schema (tables, functions, triggers, security policies) | Dumped from the source project and restored into yours |
+| Data | Same dump, with `auth.users` loaded first so user IDs stay stable |
+| Auth users | Password hashes travel, so everyone's existing password keeps working |
+| Storage buckets and files | Copied object by object |
+| Edge functions | Redeployed from your repo |
+| Cron jobs | Recreated with the new project URL |
+| Stripe webhooks | A second endpoint runs in parallel, then the old one is retired |
 
-Stable user IDs are the load-bearing detail. Every foreign key in your app points at `auth.users.id`, and every RLS policy compares against `auth.uid()`. Preserve those IDs and the entire app keeps working after the move. Regenerate them and you own a data-repair project instead of a migration.
+Stable user IDs are the load-bearing detail. Every row in your database that belongs to a user points at that user's ID, and every security policy compares against it. Preserve those IDs and the whole app keeps working after the move. Regenerate them and you own a data-repair project instead of a migration.
 
-## 2 lanes, and you are the wire
+## 2 windows, and you are the wire
 
-The reason migrations like this go wrong is that people try to do all of it in one place. Lovable's sandbox cannot reach your new project's Postgres port, and it must never hold a service-role key or a database password. So every step belongs to exactly one of 2 lanes:
+Migrations like this go wrong when people try to do all of it in one place. Lovable's sandbox cannot reach your new project's database port, and it must never hold your service-role key or your database password. So every step belongs to exactly one of 2 windows:
 
-**The Lovable lane** is code changes: repointing the client, adding an idempotency table, guarding the webhook handler. You do these by pasting a prompt block into Lovable chat.
+**Lovable chat** handles code changes: repointing the app, adding a table, guarding the webhook handler.
 
-**The local lane** is everything that touches real credentials: dumps, restores, the storage copy, function deploys, the Stripe replay. These run on your machine, in Cursor or Codex or Claude Code or a plain terminal, with credentials living in one gitignored file.
+**Your AI coding tool** handles everything that touches real credentials: the dumps, the restore, the file copy, the Stripe replay. This is Cursor, Claude Code or Codex, running on your machine with your project open. If you have never used one, Cursor is the easiest starting point, and installing it is the only setup this migration needs.
 
-Lovable and your local agent cannot talk to each other. You are the wire between them. That is why every cross-lane step in the runbook is a numbered, fenced block that ends with a strict reply contract, so you paste a block one way and paste the answer back the other way without either side improvising.
+Lovable and your coding tool cannot talk to each other. You are the wire between them. Each prompt below tells you which window it goes into, and most of them end with a strict reply format, so you can paste the answer straight back into the other window without having to understand it.
 
-One rule holds the whole security model together: the only credentials that ever go into a Lovable prompt are the new project URL and the publishable key, because both ship in your client bundle anyway. Service-role keys, database passwords and Stripe secret keys go into `.env.migration` and nowhere else. Not into chat, not into a commit, not into a screenshot.
-
-Every prompt in this post is labelled with the window it goes into. There are only 2:
+One rule holds the security model together: the only credentials that ever go into a Lovable prompt are your new project URL and publishable key, because both ship inside your app anyway. Service-role keys, database passwords and Stripe secret keys go into 1 file on your computer and nowhere else. Not into a chat window, not into a screenshot.
 
 | Prompt | Paste it into |
 | --- | --- |
-| 1\. Run the migration | Your AI coding tool (Cursor, Claude Code, Codex) |
-| 2\. Idempotent webhooks | Lovable chat |
-| 3\. Reconciliation endpoint | Lovable chat |
-| 4\. Flip the backend | Lovable chat |
-| 5\. Fix verification failures | Lovable chat |
+| 1\. Set up and look inside | Your AI coding tool |
+| 2\. Make webhooks exactly-once | Lovable chat |
+| 3\. Add the reconciliation endpoint | Lovable chat |
+| 4\. Copy the database and users | Your AI coding tool |
+| 5\. Copy files, functions and cron jobs | Your AI coding tool |
+| 6\. Run the cutover | Your AI coding tool |
+| 7\. Flip the app to the new backend | Lovable chat |
+| 8\. Verify everything | Your AI coding tool |
+| 9\. Fix whatever failed | Lovable chat |
 
-## Install the skill
+## Before you start: 3 things to open
 
-With the skills CLI, which works for Claude Code, Codex and Cursor:
+**1\. Your project on your own computer.** Download your code from Lovable (GitHub export or the download option), open the folder in your AI coding tool, and leave it open. Everything in the coding-tool lane happens there.
 
-```bash
-npx skills add despia-native/lovable-to-supabase
-```
+**2\. A new Supabase project.** Go to [supabase.com/dashboard](https://supabase.com/dashboard), create a project, and pick the same region as your Lovable project. Matching regions keeps the file copy fast and your app's latency identical.
 
-Or manually for Claude Code:
+**3\. Your Lovable backend credentials.** In Lovable, open the Cloud tab and its advanced settings, where the data export and the direct database connection string live. The service-role key sits in the same area. That UI moves around, so if a value is not exposed, ask Lovable support for it. It is your data.
 
-```bash
-git clone https://github.com/despia-native/lovable-to-supabase /tmp/lovable-to-supabase
-cp -r /tmp/lovable-to-supabase/skills/* ~/.claude/skills/
-```
+You will paste those values into 1 file later, in your editor, not into any chat.
 
-Then open your Lovable-exported repo and say:
+## Prompt 1: set up and look inside your backend
 
-```plaintext
-migrate this app off Lovable Cloud to my own Supabase project
-```
+This one is long because it teaches your coding tool the rules for the whole migration. The rest are short.
 
-The agent installs `MIGRATION.md` and `scripts/migration/` into the repo, adds the gitignore entries before any secret file exists, and walks the phases with you. If you would rather not use an agent at all, copy the same 2 paths into your repo and follow the runbook top to bottom.
-
-If your tool does not read skills, or you want it pinned to the repo and its rules explicitly, paste the full version instead.
-
-**Prompt 1. Paste this into your AI coding tool running locally** (Cursor, Claude Code, Codex, anything with a shell in your repo)
+**Paste this into your AI coding tool running locally** (Cursor, Claude Code, Codex)
 
 ```plaintext
 CONTEXT
-This repo is a Lovable export. Its backend is Lovable Cloud (Supabase under
-the hood) and I am moving it onto a Supabase project I own. You have a shell
-on my machine. Lovable chat is a separate window I control; you and Lovable
-cannot talk to each other, so I relay blocks between you.
+This repo is my app, exported from Lovable. Its backend is Lovable Cloud
+(Supabase under the hood) and I am moving it onto a Supabase project I own.
+I am not a developer. You have a terminal on my machine, so you run every
+command yourself. Never hand me a command to type unless there is genuinely
+no alternative, and if there is not, give me the exact line and tell me where
+to run it.
 
 SOURCE OF TRUTH
-Read https://github.com/despia-native/lovable-to-supabase before writing any
-code. Install its skills/lovable-to-supabase/MIGRATION.md and
+Read https://github.com/despia-native/lovable-to-supabase before doing
+anything. Install its skills/lovable-to-supabase/MIGRATION.md and
 skills/lovable-to-supabase/scripts/migration/ into this repo and follow that
-runbook. Use its numbered handoff blocks as written, filling in placeholders.
-Do not invent your own wording where a canonical block exists, and do not
-improvise a step the runbook does not have. Ask me rather than assuming.
+runbook exactly. Use its numbered handoff blocks as written. Do not improvise
+steps it does not have, and ask me rather than guessing.
 
 MY SETUP
-Source project ref: <OLD_REF>
-Target Supabase project ref: <TARGET_REF>
-Target region: <same region as source>
+My new Supabase project ref: <PASTE IT HERE>
 Payments: <my own Stripe account | Lovable-managed | none>
-Storage buckets: <list, or "check the inventory">
 
-TASK
-1. Install the runbook and scripts, chmod +x the shell scripts, and append
-   .env.migration and scripts/migration/dumps/ to .gitignore BEFORE creating
-   any env file.
-2. Create scripts/migration/.env.migration from the example with chmod 600,
-   pre-filling only non-secret values you can read from this repo, then stop
-   so I can fill the secrets in my editor.
-3. Run 00-inventory.sh and summarise it, flagging tables without RLS, cron
-   jobs, vault secret names, and edge function env var names.
-4. Give me the Phase 2 blocks to paste into Lovable, then wait for my replies.
-5. Run Phase 3 through Phase 7 in runbook order, stopping at the first failure.
-6. Walk me through the Phase 8 cutover in its exact order, pausing for the
-   flip block and my confirmation that Lovable has deployed.
-7. Run the Phase 9 verification checklist and report each check pass or fail.
+TASK, THIS SESSION ONLY
+1. Install the runbook and the scripts into this repo and make them runnable.
+2. Add .env.migration and scripts/migration/dumps/ to .gitignore BEFORE
+   creating any file that will hold credentials.
+3. Create scripts/migration/.env.migration from the example, fill in only the
+   values you can read from this repo, then STOP. List for me, line by line,
+   every value I still need to enter and exactly where in the Supabase or
+   Lovable dashboard to find each one.
+4. After I confirm the file is filled in, run the inventory script and explain
+   the result in plain English: how many users and tables I have, which tables
+   have no security policies, what scheduled jobs exist, and what settings my
+   edge functions expect.
 
 RULES
-Never print, cat, or echo .env.migration, dump files, or anything under
+Never print, open or echo .env.migration, the dump files, or anything under
 scripts/migration/dumps/.
-Never ask me to paste a secret into this chat.
-Never put anything other than the project URL and publishable key into a
-Lovable-bound block.
-Never continue past a failed row-count gate, a schema-drift abort, or a
-storage copy that reports failures.
-Never reorder the cutover sequence, and never run the delta dump before the
-freeze timestamp is set.
-Never pipe input into the restore script's interactive confirmation.
-Never use git add -f on an ignored path.
-
-DONE WHEN
-Every table's row count matches the source.
-An existing user signs in with their old password.
-As a signed-in user with the publishable key, I can read my own rows and not
-another user's.
-A storage object loads from the new bucket.
-A test checkout writes exactly 1 webhook_events row, and re-running the replay
-adds 0 more.
-git grep for the old project ref returns nothing.
+Never ask me to paste a password, a secret key or a connection string into
+this chat.
+Never continue past a step the runbook marks as a gate.
+Stop and tell me when something looks wrong instead of working around it.
 ```
 
-The 2 sections that turn this from a wish list into something an agent can execute are MY SETUP and DONE WHEN. Filling in the refs stops it guessing at project identifiers, and acceptance criteria give it a self-check, so it stops when the migration actually works rather than when it has finished writing commands.
+When it stops and asks you to fill in the credentials file, open `scripts/migration/.env.migration` in your editor, paste each value after its equals sign, and save. That file is the only place your secrets live, and it is already excluded from your code history.
 
-The rest of this post is what happens next, in order, and the 4 prompts you paste into Lovable along the way.
+The inventory is worth reading rather than skimming. 2 things matter most. A table with no security policy is a hole that lets any signed-in user read everyone's rows, and it is better fixed before the move than after. And a scheduled job with a service-role key written into it is a leaked key, which should be rotated.
 
-## Step 1: look at what you have before you touch anything
+## Prompts 2 and 3: prepare the app while it is still on Lovable
 
-Create the target Supabase project in the same region as the source, then fill `scripts/migration/.env.migration` in your editor. Source credentials come from Lovable's Cloud settings, currently under the Cloud tab and its advanced settings, where the direct database connection string lives. That UI moves around. If a value is not exposed, ask Lovable support for it, because it is your data.
+These 2 changes happen on your current backend, before anything is copied, so they travel across with the schema. They are what makes payments safe during the move: your webhook stops being able to process the same Stripe event twice, and you gain an endpoint that can re-check every subscription against Stripe at any time.
 
-Then run the read-only inventory:
-
-```bash
-./scripts/migration/00-inventory.sh
-```
-
-It prints tables with row estimates, enums, functions, triggers, RLS policies, tables that are missing RLS, extensions, realtime tables, cron jobs, storage buckets, auth user counts, the names of your vault secrets, and every environment variable name your edge functions read. Nothing secret is printed. Keep the output, because 4 of the later phases are checklists against it.
-
-2 things to look for in that output. Tables with no RLS policy are a hole you should close before migrating them, not after. And any cron job whose command has a service-role key baked into it is a leak that should be rewritten to read from vault, then rotated.
-
-## Step 2: wire the app while it is still on Lovable
-
-This is the step people skip, and it is the one that makes the payment story safe.
-
-Before you dump anything, ask Lovable to make 2 changes on the source project: a `webhook_events` table that makes Stripe processing exactly-once, and a protected endpoint that can re-sync subscription truth from Stripe at any time. Paste each block whole, wait for its reply block, and keep the replies.
-
-**Prompt 2. Paste this into Lovable chat** (idempotent webhook processing)
+**Paste this into Lovable chat** (make webhook processing exactly-once)
 
 ```plaintext
 You are working on my app which currently uses Lovable Cloud (Supabase under
@@ -195,7 +155,7 @@ other behaviour.
        set status = 'processing', error = null
        where webhook_events.status = 'failed'
      returning id
-   - No row returned, the event was already handled (or is being handled):
+   - No row returned, the event was already handled or is being handled:
      return 200 with {"received": true, "duplicate": true} and do nothing else.
    - Row returned: run the existing processing, then set status='processed',
      processed_at=now() on that row.
@@ -209,7 +169,7 @@ WEBHOOK_FUNCTION: <path of the edge function changed>
 NOTES: <one line, or "-">
 ```
 
-**Prompt 3. Paste this into Lovable chat** (protected reconciliation endpoint)
+**Paste this into Lovable chat** (add the reconciliation endpoint)
 
 ```plaintext
 Add a new edge function named reconcile-subscriptions to this project. It
@@ -245,89 +205,105 @@ TABLES_TOUCHED: <table names it upserts into>
 NOTES: <one line, or "-">
 ```
 
-Paste each reply back to your local tool. The reply contract exists so neither side has to interpret prose.
+Paste both replies back into your coding tool. The strict reply format exists so that neither side has to interpret prose, and so you never have to judge whether an answer was good enough.
 
-Why these changes happen on the source project rather than the target: the schema dump in the next step carries them across for free, and the cutover delta cannot then hit schema drift between the 2 projects. Idempotent webhook processing is also what lets both Stripe endpoints run at the same time later, since a duplicate delivery becomes a no-op instead of a double charge in your own records.
+Skip both if your app takes no payments.
 
-## Step 3: move schema, data and users
+## Prompt 4: copy the database, the data and the users
 
-3 commands, in this order:
+**Paste this into your AI coding tool**
 
-```bash
-./scripts/migration/01-dump-schema.sh
-./scripts/migration/02-dump-data.sh
-./scripts/migration/03-restore.sh all
+```plaintext
+Continue the migration, Phase 3 of MIGRATION.md: dump the schema, dump the
+data, and restore both into my new Supabase project. Run the scripts
+yourself.
+
+The row count check is a hard gate. Do not continue past it. When it
+finishes, show me the comparison as a simple table and tell me in one
+sentence whether every table matched.
 ```
 
-The restore disables triggers and foreign key checks during the load, runs inside a single transaction, then compares row counts table by table against the source.
+Behind that prompt: the restore loads users first so their IDs survive, turns off foreign key checks during the load, runs the whole thing as a single transaction, and then counts every table on both sides and compares.
 
-That comparison is a hard gate. Every row must read `ok` before you go further. A mismatch on one busy table almost always means writes were not fully frozen, usually a cron job or a webhook still pointing at the source. The troubleshooting appendix covers the rest, including the 2 that catch people most often: a `pg_dump` older than the source's Postgres major version, and a network with no IPv6 route to the direct hostname, where the session pooler on port 5432 works and the transaction pooler on port 6543 does not.
+If a count does not match, do not push on. It usually means something was still writing to the old backend during the dump, and the runbook's troubleshooting section covers the rest. Your tool should say so rather than shrugging.
 
-## Step 4: storage, functions, secrets and cron
+## Prompt 5: copy files, functions and scheduled jobs
 
-Buckets and objects are not in a database dump:
+**Paste this into your AI coding tool**
 
-```bash
-bun scripts/migration/04-copy-storage.ts
+```plaintext
+Continue with Phase 4 through Phase 7 of MIGRATION.md:
+1. Copy every storage bucket and every file to the new project. If anything
+   fails, re-run the copy until it reports 0 failures, and tell me if it
+   cannot get there.
+2. Deploy the edge functions to the new project.
+3. List every secret name the functions need, and tell me exactly where in
+   the Supabase dashboard to set each one. Do not ask me for the values here.
+4. Recreate the scheduled jobs with the new project URL and key.
+Then give me a plain checklist of everything I still have to set by hand in
+the Supabase dashboard, with where to click for each.
 ```
 
-It recreates each bucket with the same public flag, size limit and MIME allow-list, then streams objects across. It is re-runnable and skips anything already present at the same size, so you run the slow bulk copy today and a fast delta at cutover.
+That last line matters. Auth configuration is the one part of a Supabase project that lives in no backup: your site URL, your redirect URLs, every social login with its own client credentials, and your email settings. None of it is copied by anything, and it is easy to discover at the worst moment. Get the checklist now, work through it before cutover.
 
-Then deploy functions to the target and set every secret name from the inventory:
+## The Stripe step you do by hand
 
-```bash
-supabase link --project-ref <TARGET_REF>
-supabase functions deploy
+Skip if you take no payments. This is 5 minutes of clicking and it is what makes the cutover risk-free.
+
+1.  Open the Stripe dashboard, go to Developers, then Webhooks.
+    
+2.  Add an endpoint pointing at your new project's webhook function URL. Your coding tool can tell you that URL.
+    
+3.  Subscribe it to exactly the same events as your existing endpoint.
+    
+4.  Leave the old endpoint switched on.
+    
+5.  Copy the new endpoint's signing secret, the value starting `whsec_`, and set it in 2 places: the new project's edge function secrets in the Supabase dashboard, and the credentials file on your machine, in your editor.
+    
+
+From this moment until 72 hours after cutover, every Stripe event goes to both backends. The table you added in prompt 2 makes the duplicate a no-op. Payments and renewals never pause during the migration, which is the entire point of doing it this way.
+
+## Prompts 6 and 7: the cutover
+
+Pick a quiet hour. With everything above done, your app is unavailable for minutes, not hours.
+
+**Paste this into your AI coding tool**
+
+```plaintext
+We are doing the cutover now, Phase 8 of MIGRATION.md. Follow its order
+exactly and do not skip ahead.
+
+1. Set the freeze timestamp in the credentials file to right now, before I
+   stop writes, and tell me when it is set.
+2. I will tell you when the old app is frozen. Then run the delta data sync
+   and the storage delta, and confirm the row counts still match.
+3. PAUSE and tell me to flip the app in Lovable. Wait for me to confirm it is
+   deployed before doing anything else.
+4. Then replay the Stripe events since the freeze, dry run first so I can see
+   what it would do, and run the reconcile step after.
+
+After each stage, tell me in one line what ran and whether it worked.
 ```
 
-Cron jobs get regenerated from the schema dump with the new project URL and the new publishable key substituted in. Auth configuration is the one part that is genuinely manual: site URL, redirect URLs, every OAuth provider with client credentials from your own console accounts, email templates and SMTP. None of it is in any dump.
+When it pauses at step 3, put your app into maintenance mode or unpublish it, then send this.
 
-## Step 5: run both Stripe webhooks at once
-
-Add a second endpoint in the Stripe dashboard pointing at the target project's webhook function, subscribed to the same event set as the existing one, and leave the old endpoint enabled. Copy the new signing secret into the target function's secrets and into `.env.migration`.
-
-From here until 72 hours after cutover, every Stripe event is delivered to both projects. The idempotency table means that costs you nothing. Payments and renewals never pause during the migration, which is the point.
-
-## Step 6: the cutover, in strict order
-
-Pick a low-traffic window. With everything above done, the downtime is a delta dump plus a restore, so minutes.
-
-1.  Record `FREEZE_TIMESTAMP` in `.env.migration`, set to now, before you stop writes. Overlap is safe because of idempotency. A gap is not.
-    
-2.  Freeze writes on the old app. Reads can continue.
-    
-3.  Re-run the data dump and `03-restore.sh data` for the delta.
-    
-4.  Re-run the storage copy for its delta.
-    
-5.  Flip the app to the new project with the block below.
-    
-6.  Unfreeze.
-    
-7.  Replay Stripe events since the freeze with `06-stripe-replay.ts`.
-    
-8.  Reconcile subscription state from Stripe with `07-stripe-reconcile.ts`.
-    
-9.  Verify.
-    
-
-**Prompt 4. Paste this into Lovable chat** (flip the backend, cutover step 5)
+**Paste this into Lovable chat** (flip the app to your own backend)
 
 ```plaintext
 Cutover step: this app must stop using Lovable Cloud and use my own Supabase
 project instead, starting now.
 
-New project URL: <PASTE TARGET_SUPABASE_URL HERE>
-New publishable (anon) key: <PASTE TARGET PUBLISHABLE KEY HERE>
+New project URL: <PASTE YOUR NEW PROJECT URL HERE>
+New publishable (anon) key: <PASTE YOUR NEW PUBLISHABLE KEY HERE>
 (both values are public by design; no secret keys are included and none are
 needed for this step)
 
-1. Point every Supabase client in this app at the project above - including
-   src/integrations/supabase/client.ts and any env files/config the client
-   reads. If backend switching needs a settings/integration action instead of
-   a code change, tell me exactly where to click and stop.
+1. Point every Supabase client in this app at the project above, including
+   src/integrations/supabase/client.ts and any env files or config the client
+   reads. If switching the backend needs a settings action instead of a code
+   change, tell me exactly where to click and stop.
 2. Search the whole repo for the old project ref
-   <PASTE OLD PROJECT REF HERE> and update every remaining reference
+   <PASTE THE OLD PROJECT REF HERE> and update every remaining reference
    (hardcoded URLs, env files, config). Do not change database schema or edge
    function code.
 3. Publish/deploy the app.
@@ -340,41 +316,49 @@ OLD_REFS_REMAINING: none | <paths>
 NOTES: <one line, or "-">
 ```
 
-The replay script lists Stripe events since your freeze timestamp and re-delivers them to the new endpoint, re-signed with that endpoint's own signing secret. Signature verification stays fully enabled. Anything the parallel endpoint already processed is skipped by `webhook_events`.
+Paste that reply back into your coding tool, take the app out of maintenance mode, and let it finish the replay and reconcile steps. The replay re-sends every Stripe event since your freeze to the new endpoint, properly signed, and anything already handled is skipped.
 
-If the cutover goes wrong, rollback is cheap for exactly as long as you leave the old endpoint and the old project alive: repeat the flip block with the old URL and key, unfreeze, and Stripe needs nothing because the old endpoint never stopped receiving events. Keep that decision window short, since writes that landed on the new project after the flip stay there.
+If something goes badly wrong here, rollback is cheap for as long as the old endpoint and the old project are still alive: send the flip prompt again with your old project URL and key, unpublish and republish, and Stripe needs nothing because the old endpoint never stopped receiving events. Decide fast, though, because anything written to the new backend after the flip stays there.
 
-## Step 7: verify like you do not trust yourself
+## Prompts 8 and 9: verify, then fix
 
-Run all of these against the new project before calling it done:
+**Paste this into your AI coding tool**
 
-*   Row counts match per table
+```plaintext
+Run the Phase 9 verification checklist from MIGRATION.md against my new
+project and report each check as pass or fail in a simple list, in plain
+English. For anything you cannot check yourself, tell me exactly what to
+click in my app to check it. Do not call the migration done until every
+check passes.
+```
+
+The checks that matter, in the language of someone using the app rather than reading a database:
+
+*   Every table has the same number of rows as before
     
-*   An existing user signs in with their old password, and an OAuth user signs in
+*   An existing user can sign in with the password they already had
     
-*   RLS holds for a real signed-in user, checked with the publishable key rather than the service-role key, which bypasses RLS and proves nothing
+*   A signed-in user sees their own data and nobody else's
     
-*   A storage object loads from the new bucket
+*   An image or file loads from the new storage
     
-*   A test checkout writes exactly 1 `webhook_events` row
+*   A test purchase records exactly 1 payment event, and replaying it records 0 more
     
-*   Re-running the replay adds 0 rows to that table
+*   A live subscription shows the same status in your database as in Stripe
     
-*   A live subscription's status and period end match the Stripe dashboard
+*   Your scheduled jobs have run recently and succeeded
     
-*   `cron.job_run_details` shows a recent successful run
-    
-*   `git grep` for the old project ref comes back clean
+*   No file in your project still mentions the old backend
     
 
-When one of these fails, route it back with its evidence rather than describing it.
+When something fails, do not describe it to Lovable. Copy the exact output and send it.
 
-**Prompt 5. Paste this into Lovable chat** (fix verification failures)
+**Paste this into Lovable chat** (fix whatever failed)
 
 ```plaintext
 Post-migration verification on my own Supabase project found these failures:
 
-<PASTE THE FAILING CHECKS AND EXACT ERRORS/OUTPUT HERE>
+<PASTE THE FAILING CHECKS AND EXACT ERRORS OR OUTPUT HERE>
 
 Fix the causes in this app without changing intended behaviour. The database
 now lives in the Supabase project this app was repointed to; do not reference
@@ -386,25 +370,27 @@ CHANGES: <files/migrations changed>
 NOTES: <one line, or "-">
 ```
 
-Afterwards: watch both Stripe endpoints for 72 hours, then delete the old one. Keep the old project paused rather than deleted for a week. Delete the dumps and the env file from your machine, because those dumps contain real PII and password hashes.
+Then re-run prompt 8 until everything passes.
 
-## The 4 things that silently break
+Afterwards: watch both Stripe endpoints for 72 hours, then delete the old one. Keep the old Lovable project paused rather than deleted for a week, because it is your safety net. Ask your coding tool to delete the dumps and the credentials file from your machine, since those dumps contain real user data.
 
-**Sessions.** A new project signs tokens with new keys, so every user is signed out once and logs in again. Passwords and OAuth links survive. Say it in a banner rather than letting people think the app broke.
+## The 4 things that surprise people
 
-**Absolute storage URLs stored in the database.** Public object URLs contain the project ref, so any `avatar_url` column holding a full URL points at the old host. Rewrite them on the target, and rewrite them again after the cutover delta, because reloading source rows restores the old hostnames.
+**Everyone gets signed out once.** A new project signs its tokens with new keys, so every user logs in again the first time after the move. Their passwords and social logins still work. Put a line in your app saying so, or support tickets will tell you about it instead.
 
-**Lovable-managed Stripe.** If payments run through Lovable's built-in integration rather than your own Stripe account, the merchant account and the product catalog do not transfer. You connect your own account, recreate products and prices, and move existing subscriptions through Stripe's own account-to-account migration, which is a support request. Find this out in Phase 0, not during the cutover.
+**File links saved in your database still point at the old backend.** If any column holds a full image URL rather than a file path, those URLs contain the old project address. They need rewriting on the new project, and rewriting a second time after the cutover copy, because that copy reloads the old values. Ask your tool to check for this in prompt 5.
 
-**The 30-day replay window.** Stripe's event list reaches back about 30 days. Reconciliation does not depend on events, so it still works, but a freeze window older than that cannot be replayed.
+**Lovable-managed Stripe does not transfer.** If your payments run through Lovable's built-in integration rather than your own Stripe account, the merchant account and your product catalogue stay with Lovable. You connect your own Stripe account, recreate the products and prices, and move existing subscriptions through Stripe's own account-to-account process, which is a support request to Stripe. Find this out before you start, not during the cutover.
+
+**Stripe only remembers 30 days of events.** The replay reaches back about a month. Reconciliation does not depend on events at all, so subscription state is still recoverable, but a freeze older than that cannot be replayed.
 
 ## Turn the same app into an iOS and Android app
 
-Owning the backend is half of it. The other half is that the thing your users open is a browser tab.
+Owning the backend is half of it. The other half is that the thing your users open is still a browser tab.
 
-Despia takes the web app you already built and ships it as a real native binary for iOS and Android. Your Lovable app stays the source of truth. The web code runs in the platform WebView, WKWebView on iOS and the Chromium-based WebView on Android, and 50+ native device capabilities become available through a single JavaScript function inside that same codebase.
+Despia takes the web app you already built and ships it as a real native app for iOS and Android. Your Lovable app stays the source of truth. The web code runs in the platform WebView, WKWebView on iOS and the Chromium-based WebView on Android, and 50+ native device capabilities become available through a single JavaScript function inside that same codebase.
 
-There is no second project to keep in sync. The environment check is a one-liner, and native calls sit behind it:
+There is no second project to keep in sync. The environment check is 1 line, and native calls sit behind it:
 
 ```javascript
 const isDespia = navigator.userAgent.toLowerCase().includes('despia')
@@ -412,18 +398,18 @@ const isDespia = navigator.userAgent.toLowerCase().includes('despia')
 if (isDespia) despia('successhaptic://')
 ```
 
-The same pattern covers push notifications, biometric authentication, the camera, geolocation, native storage and the rest of the feature set. In a browser the check is false and your web app behaves exactly as it does today, so you are not maintaining 2 code paths.
+The same pattern covers push notifications, biometric sign-in, the camera, location, native storage and the rest of the feature set. In a browser the check is false and your app behaves exactly as it does today, so you are not maintaining 2 versions of anything. If you would rather not write that yourself, it is a prompt for Lovable like any other.
 
 3 practical consequences for a Lovable app:
 
-**Publishing does not need a Mac.** Builds and code signing run in the cloud, from the browser. No Xcode, no Android Studio, no local toolchain to install and no build machine to maintain. If you ever want the native projects, they export in full at any time, so this is not a one-way door.
+**Publishing does not need a Mac.** Builds and code signing run in the cloud, from your browser. No Xcode, no Android Studio, no toolchain to install, no build machine to maintain. If you ever want the native projects, they export in full at any time, so this is not a one-way door.
 
 **Web updates do not need a review.** Changes to your web content ship over the air through remote hydration, without an App Store resubmission. You keep the Lovable deploy loop you already have. Only changes to the native container itself need a new build.
 
-**Your backend does not change.** The native app talks to the Supabase project you just migrated to, with the same URL, the same publishable key and the same RLS policies. That is exactly why doing the migration first is worth it: the app on the store points at infrastructure you own.
+**Your backend does not change.** The native app talks to the Supabase project you just migrated to, with the same URL, the same publishable key and the same security policies. Which is exactly why doing the migration first is worth it: the app sitting in the App Store points at infrastructure you own.
 
 ## Get it on the stores
 
-Take the app you just moved onto your own Supabase project and ship it to iOS and Android without a CLI or a Mac. Code signing and submission run from the browser.
+Take the app you just moved onto your own Supabase project and ship it to iOS and Android without a terminal and without a Mac. Code signing and submission run from the browser.
 
 [See the setup docs at setup.despia.com](https://setup.despia.com)
