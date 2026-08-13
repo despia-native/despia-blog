@@ -46,6 +46,10 @@ Migrations like this go wrong when people try to do all of it in one place. Lova
 
 Lovable and your coding tool cannot talk to each other. You are the wire between them. Each prompt below tells you which window it goes into, and most of them end with a strict reply format, so you can paste the answer straight back into the other window without having to understand it.
 
+Lovable never sees the skill, and does not need to. The skill and the runbook are installed only in your coding tool. Every block you paste into Lovable spells out the whole change inline, down to the exact table columns, so Lovable only ever does the 1 code change in front of it. Nothing to look up, nothing to fetch, no credentials involved.
+
+What Lovable does get is 1 line of background at the top of each block: that the backend is moving to a Supabase project you own, and that the migration itself runs somewhere else. That is enough to stop it inventing its own migration plan or asking you for a database password, without inviting it into work it cannot do from a sandbox.
+
 One rule holds the security model together: the only credentials that ever go into a Lovable prompt are your new project URL and publishable key, because both ship inside your app anyway. Service-role keys, database passwords and Stripe secret keys go into 1 file on your computer and nowhere else. Not into a chat window, not into a screenshot.
 
 | Prompt | Paste it into |
@@ -130,7 +134,12 @@ These 2 changes happen on your current backend, before anything is copied, so th
 
 ```plaintext
 You are working on my app which currently uses Lovable Cloud (Supabase under
-the hood). Task: make Stripe webhook processing idempotent so every event is
+the hood). Background, for context only: I am moving this app's backend to a
+Supabase project I own. The database copy and the Stripe cutover run on my
+own machine, not here, so do not attempt them and do not ask me for keys or
+connection strings. Your job is this one code change.
+
+Task: make Stripe webhook processing idempotent so every event is
 processed exactly once, even if Stripe delivers it twice. Do not change any
 other behaviour.
 
@@ -172,6 +181,11 @@ NOTES: <one line, or "-">
 **Paste this into Lovable chat** (add the reconciliation endpoint)
 
 ```plaintext
+Background, for context only: I am moving this app's backend to a Supabase
+project I own, and the migration itself runs on my own machine, not here. Do
+not attempt it and do not ask me for keys or connection strings. Your job is
+this one function.
+
 Add a new edge function named reconcile-subscriptions to this project. It
 pulls subscription truth from Stripe and upserts it into the database, so we
 can re-sync at any time. Requirements:
