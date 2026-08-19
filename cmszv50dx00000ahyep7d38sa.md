@@ -20,7 +20,7 @@ The advice circulating online is that Apple rejects WebView apps, so you have to
 
 What does get flagged is different. Guideline **5.6** is the Developer Code of Conduct, and a rejection under it arrives with language about a pattern of unusual behavior associated with fraudulent activity and features that appear to have been hidden during review. Unlike a purely technical rejection, it carries account-level implications, because Apple states that a Developer Program account will be terminated for actions not in accordance with the code, and that restoring it means a written statement of improvements Apple has to approve.
 
-For the full breakdown of what guideline 5.6 means at the account level, see our [guideline 5.6 rejection guide](/blog/guideline-5-6-rejection).
+For the full breakdown of what guideline 5.6 means at the account level, see our [guideline 5.6 rejection guide](https://blog.despia.com/guideline-5-6-rejection-why-ai-built-apps-get-flagged).
 
 References below are checked against the [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) as updated on June 8, 2026.
 
