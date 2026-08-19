@@ -18,7 +18,7 @@ It means Apple invoked the Developer Code of Conduct rather than a technical rul
 
 The wording is what alarms people. You get told there is a pattern of unusual behavior commonly associated with fraudulent activity, and that features appear to have been hidden during review, when you hid nothing at all.
 
-The weight is real, though. Apple states that a Developer Program account will be terminated for actions not in accordance with the code, and that restoring it means submitting a written statement of the improvements you plan to make, which Apple has to approve. For the full breakdown, see our [guideline 5.6 rejection guide](/blog/guideline-5-6-rejection).
+The weight is real, though. Apple states that a Developer Program account will be terminated for actions not in accordance with the code, and that restoring it means submitting a written statement of the improvements you plan to make, which Apple has to approve. For the full breakdown, see our [guideline 5.6 rejection guide](https://blog.despia.com/guideline-5-6-rejection-why-ai-built-apps-get-flagged).
 
 References throughout are checked against the [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) as updated on June 8, 2026.
 
