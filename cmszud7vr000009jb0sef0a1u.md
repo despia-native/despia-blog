@@ -10,15 +10,17 @@ tags: ios, ios-app-developer, ios-app-development, appstore, appreview
 
 ---
 
+A guideline 5.6 letter accuses you of hiding features and behaving like a fraud. If a legitimate app receives one despite hiding nothing, similarity and reviewability are two of the first things worth investigating. Here is what the Developer Code of Conduct says, and the steps that clear it.
+
 The letter reads like an accusation. Apple identified a pattern of unusual behavior commonly associated with fraudulent activity, and your app appears to contain features that were intentionally hidden during review. You did not hide anything. There is no kill switch, no screen that unlocks after approval, no remote flag waiting to flip.
 
 Apple does not publish how it decides, or how it weights any individual signal. What it does publish is that its systems use AI to analyze app similarity, identify malicious patterns, and flag potentially problematic changes in updates. For a legitimate developer holding this letter, similarity and reviewability are the two concrete things worth investigating, and neither of them is an engineering problem. Everything below is checked against the [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) as last updated on June 8, 2026.
 
-## What guideline 5.6 actually says
+## What does guideline 5.6 actually say?
 
-Section 5.6 is the Developer Code of Conduct, and reading it changes how you respond to the letter.
+It is the Developer Code of Conduct. It covers respectful communication, customer trust, ratings integrity, accurate developer identity, and app quality, and it carries account-level consequences rather than applying only to one submission.
 
-It is about conduct rather than features. It asks developers to treat people with respect in App Store review responses, customer support requests, and communication with Apple, and it states that repeated manipulative or misleading behavior or other fraudulent conduct leads to removal from the Apple Developer Program.
+Reading the section changes how you respond. It is about conduct rather than features. It asks developers to treat people with respect in App Store review responses, customer support requests, and communication with Apple, and it states that repeated manipulative or misleading behavior or other fraudulent conduct leads to removal from the Apple Developer Program.
 
 It is about customer trust. Apps should not prey on users, rip off customers, trick them into unwanted purchases, force them to share unnecessary data, raise prices in a tricky manner, charge for things that are not delivered, or use other manipulative practices.
 
@@ -39,7 +41,9 @@ Four subsections sit under it:
 
 Note what 5.6.4 does. Quality problems can therefore become part of a conduct judgment rather than remaining only a technical issue.
 
-## The rejection numbers explain the wording
+## Why does the letter mention hidden features?
+
+Because it is a template covering a broad category. Apple's published 2025 numbers show where enforcement volume actually sits, and it is not in apps concealing functionality.
 
 Apple published its App Store fraud analysis for 2025 in May 2026. App Review evaluated more than 9.1 million submissions and rejected over 2 million, including more than 1.2 million new apps and nearly 800,000 updates. By category:
 
@@ -57,7 +61,9 @@ Apple is explicit about the mechanism in that same report. Its systems use AI to
 
 App similarity is not a side detail. It is a stated input to review, and it can turn "my app came from the same starter as thousands of others" into a flag. Guideline **4.3(b)** says the same thing in plain language: do not submit apps that are indistinguishable from what is already widely available.
 
-## AI is not the problem. The untouched default theme is
+## Is building with AI against App Review rules?
+
+No. Apple regulates what the resulting app does and how it is submitted, and guideline 4.2.6 explicitly contemplates app-generation services. Where AI-built apps run into trouble is low-effort similarity, and an untouched default theme is what that looks like from the outside.
 
 The wrong lesson gets drawn from these rejections constantly, so it is worth saying directly. Being built with AI is not itself an App Review violation. Apple regulates what the resulting app does and how it is submitted, and 4.2.6 explicitly contemplates app-generation services. Where AI-built apps run into trouble is low-effort similarity, and an untouched default theme is what that looks like from the outside.
 
@@ -67,7 +73,9 @@ Same with generated assets. A model produces an icon in 5 seconds and it looks l
 
 **Set your tokens before you build more screens.** Palette, radius scale, typeface, spacing rhythm, border weight, shadow treatment. Do it first and every component generated afterwards inherits your identity instead of the default one. Changing the accent color from purple to teal is not a redesign.
 
-## The login screen is where it gets caught
+## Where does a generated app get caught first?
+
+Usually the sign-in screen. It is the screen most likely to be identical across unrelated submissions, and it is the one a reviewer sees before anything else. Apple has not disclosed screen weighting, so treat this as the first place to look rather than a ranking.
 
 Apple has not said which screens weigh most, so treat this as the first place to look rather than a ranking. It is the screen most likely to be identical across unrelated submissions, and it is the one a reviewer sees first.
 
@@ -114,7 +122,9 @@ The auth screens share the onboarding screen's visual identity, no original
 template string remains, and an existing account signs in on a real device.
 ```
 
-## The rest of the shell counts too
+## What else in the submission looks generated?
+
+The icon, the screenshots, leftover placeholder text, and the store description. None is a violation alone. Together they form the profile.
 
 Review looks at the whole submission.
 
@@ -127,7 +137,9 @@ Review looks at the whole submission.
 4.  **Rewrite the store description.** Not a violation on its own, but another similarity signal in a submission that already has several.
     
 
-## Quality is part of the conduct judgment
+## How do quality problems become a conduct issue?
+
+Through 5.6.4, which names excessive customer reports, negative reviews, and refund requests as indications of failing to maintain quality, and says that inability to maintain quality may factor into whether a developer abides by the code of conduct.
 
 A broken screen is already a 2.1 completeness problem, since Apple rejects incomplete binaries, crashes, and obvious technical issues. 5.6.4 means it can also matter here. A reviewer who suspects a template will spend the rest of their time looking for confirmation, and an app that does not work gives it to them.
 
@@ -135,7 +147,9 @@ Before submitting, walk the app on a real device. Open every screen. Tap every b
 
 The forward-looking half of 5.6.4 matters too. Excessive customer reports, negative reviews, and high refund rates are named as indications, which means quality problems that survive approval can come back as a code of conduct question later.
 
-## Represent the app accurately
+## Are your store claims accurate?
+
+Guideline 5.6.2 requires your representation of yourself, your business, and your offerings to be accurate, truthful, relevant, and up to date. Read your listing as a reviewer would and delete anything you could not evidence.
 
 5.6.2 is short and it catches more AI-built apps than people expect, because generated marketing copy overstates by default.
 
@@ -143,7 +157,9 @@ Your app name, subtitle, description, screenshots, and in-app claims all have to
 
 If the model wrote your listing, read it as a reviewer would and delete anything you could not evidence.
 
-## Do not do the things 5.6.1 and 5.6.3 actually ban
+## What do 5.6.1 and 5.6.3 actually ban?
+
+Ratings and reviews collected outside Apple's API or arranged through incentives, and manipulation of any element of the App Store customer experience, including charts, search, reviews, and referrals.
 
 Worth stating plainly, because growth advice on the internet routinely recommends these.
 
@@ -158,7 +174,9 @@ Worth stating plainly, because growth advice on the internet routinely recommend
 
 These are the behaviors 5.6 is genuinely written about. If any of them are in your growth plan, remove them before you resubmit, because an account already carrying a 5.6 letter has no margin.
 
-## Apple's own rule says to customize it
+## Does guideline 4.2.6 ban building on a platform?
+
+No. It requires the app to be submitted directly by the provider of its content, rather than mass-submitted by the platform from its own account. It also tells those services to enable customized, innovative apps that provide unique customer experiences.
 
 Guideline **4.2.6** is worth reading if you built on any app-generation platform, because it says more than people quote.
 
@@ -168,7 +186,9 @@ Two things follow. First, the app has to go up under the Apple Developer account
 
 Second, Apple has written down the standard in its own words: customized, innovative, unique customer experiences. That is the same instruction as the section above, coming from the rulebook rather than from us.
 
-## Make the app reviewable
+## Why could the reviewer not verify your app?
+
+Either the build points at an environment that does not expose everything you are asking Apple to approve, or the reviewer could not sign in and could not find features you never described in Notes for Review.
 
 This is where a legitimate app accidentally lands in the hidden-features bucket.
 
@@ -195,11 +215,11 @@ In App Store Connect:
 7.  Confirm your support URL and privacy policy URL both load.
     
 
-## If the letter already arrived
+## What do you do if the letter already arrived?
 
-Do not resubmit the same binary with a version bump. Apple states that review takes longer when an app is repeatedly rejected for the same guideline violation or when a developer has attempted to manipulate the process. A second identical submission is exactly the behavior an account-level guideline is written about.
+Do not resubmit the same binary with a version bump. Make the changes, reply in Resolution Center before submitting the new build, list what changed screen by screen, and attach screenshots.
 
-Instead: make the changes, reply in Resolution Center **before** submitting the new build, list what changed screen by screen, attach screenshots, then submit.
+Apple states that review takes longer when an app is repeatedly rejected for the same guideline violation or when a developer has attempted to manipulate the process. A second identical submission is exactly the behavior an account-level guideline is written about.
 
 ```plaintext
 We have addressed the issues as follows.
@@ -224,7 +244,9 @@ functionality is gated, remote-flagged or withheld from review.
 
 No argument and no emotion. Evidence of change is what moves a 5.6 letter. If your account was actually terminated rather than the app rejected, the path back is the written improvement statement described in 5.6, and it should read like the note above with more detail. The [appeal path](https://developer.apple.com/contact/app-store/?topic=appeal) exists, but it is slower than fixing and resubmitting.
 
-## The pre-submission pass
+## What should you check before submitting?
+
+Eleven things, and the first two matter most: that your app does not wear the default theme of the tool that built it, and that your sign-in screen is distinguishable from other apps built with the same tool.
 
 1.  Your app does not use the default theme of the tool that built it.
     
@@ -251,9 +273,13 @@ No argument and no emotion. Evidence of change is what moves a 5.6 letter. If yo
 
 If you only have time for three, do 1, 2 and 11.
 
-## This is not about how your app is built
+## Is this about how your app was built?
 
-It is easy to read a 5.6 rejection as a verdict on your stack. It is not. A poorly differentiated app written in Swift gets flagged on the same signals. Apple's stated inputs are app similarity, quality, accurate representation, and whether the app can be verified. None of those is a runtime.
+No. A poorly differentiated app written in Swift gets flagged on the same signals. Similarity, quality, accurate representation, and verifiability are all things Apple's review rules explicitly evaluate. None of them is a runtime.
+
+It is easy to read a 5.6 rejection as a verdict on your stack, and it is not.
+
+If you are on a specific platform, the platform-specific versions of this guide go deeper: [Lovable](/blog/lovable-app-store-rejection), [Base44](/blog/base44-app-store-rejection), and [WebView apps generally](/blog/webview-app-store-rejection).
 
 The takeaway for anyone building with AI tools is that the tool gets you a working app quickly, and the last 10 percent, where the app stops looking like its scaffolding, is work you have to ask for. If you ship generic output and it gets rejected, the AI was not the problem. The 20 minutes nobody spent on the theme was.
 
