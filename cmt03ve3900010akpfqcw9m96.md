@@ -10,12 +10,6 @@ tags: ios, ios-app-developer, webapp, ios-app-development, appstore, lovable, ap
 
 ---
 
-* * *
-
-## title: "" description: "" slug: lovable-app-store-rejection keyword: lovable app store rejection
-
-# Why Lovable apps get flagged under guideline 5.6
-
 Two things are worth checking first on a Lovable app that got a 5.6 letter: an untouched default design, and a build pointed at the editor preview rather than the published app. Neither is concealment. Here is what Apple checks and how to clear it.
 
 You built in Lovable, wrapped it, submitted it, and got a rejection citing guideline 5.6, a pattern of unusual behavior commonly associated with fraudulent activity, and features that appear to have been hidden during review. Nothing was hidden.
