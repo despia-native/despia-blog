@@ -28,7 +28,7 @@ That does not mean push is worthless to a submission. It means it is one input a
 
 **Not compliantly today. Base44's documentation states that Stripe must not be used for digital goods inside the mobile app, and that an app using Stripe for digital content is rejected.**
 
-A StoreKit and Play Billing integration is described as in progress. Both stores require their own billing systems for digital content, so this is not a Base44 rule, it is the platform rule every app has to meet. Our [guide to selling subscriptions from a Base44 app](/blog/base44-subscriptions) covers the compliant setup in full.
+A StoreKit and Play Billing integration is described as in progress. Both stores require their own billing systems for digital content, so this is not a Base44 rule, it is the platform rule every app has to meet. Our [guide to selling subscriptions from a Base44 app](https://blog.despia.com/base44-revenuecat-setup-storekit-and-play-billing) covers the compliant setup in full.
 
 Read carefully, that line is not a warning about a risky pattern. It is a description of a closed path. If your product sells subscriptions, in-app features, credits or any other digital content, the built-in wrapper has no route to the stores until the native billing integration ships.
 
