@@ -16,7 +16,7 @@ You built in Lovable, wrapped it, submitted it, and got a rejection citing guide
 
 Guideline 5.6 is the Developer Code of Conduct. It covers conduct, customer trust, and accurate representation, and unlike a purely technical rejection it carries account-level implications: Apple states that a Developer Program account will be terminated for actions not in accordance with the code, and that restoring it requires a written statement of improvements Apple has to approve. That is why the wording is so much heavier than a 4.3 or a 2.1.
 
-For the full breakdown of what guideline 5.6 means at the account level, see our [guideline 5.6 rejection guide](/blog/guideline-5-6-rejection).
+For the full breakdown of what guideline 5.6 means at the account level, see our [guideline 5.6 rejection guide](https://blog.despia.com/guideline-5-6-rejection-why-ai-built-apps-get-flagged).
 
 Two Lovable-specific things are worth checking first. One is visual, one is procedural. References below are checked against the [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) as updated on June 8, 2026.
 
