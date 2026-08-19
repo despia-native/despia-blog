@@ -12,13 +12,11 @@ tags: ios-apps, ios, webview, ios-app-development, no-code, ai-tools, ai-agents,
 
 Base44 apps can send push notifications, and the setup is documented and straightforward. Push alone does not satisfy Apple's guideline 4.2. Apple's own minimum functionality rejection letter names push notifications, Core Location and sharing as features that do not make an app robust enough on their own. Here is what does.
 
-If you are earlier in the process, start with [how to build a Base44 mobile app you own](/blog/base44-mobile-app).
-
 ## What did Base44 actually ship?
 
-Push notifications for the generated iOS and Android builds, configured in the same window where you generate your store files. It is a real feature and it works. It is also, per Base44's own documentation, the only native capability the Base44 mobile app currently supports.
+**Push notifications for the generated iOS and Android builds, configured in the same window where you generate your store files. It is a real feature and it works.**
 
-The setup runs through your own credentials on both platforms. On iOS you create an APNs auth key under Certificates, Identifiers and Profiles in your Apple Developer account, download the `.p8` file, and upload it with the matching Key ID. This is a different key from the App Store Connect API key you upload in the same flow, and both files end in `.p8`, so label them as you download them. Apple lets you download each one exactly once.
+It is also, per Base44's own documentation, the only native capability the Base44 mobile app currently supports. The setup runs through your own credentials on both platforms. On iOS you create an APNs auth key under Certificates, Identifiers and Profiles in your Apple Developer account, download the `.p8` file, and upload it with the matching Key ID. This is a different key from the App Store Connect API key you upload in the same flow, and both files end in `.p8`, so label them as you download them. Apple lets you download each one exactly once.
 
 On Android you create your own Firebase project, register the Android app against the package name Base44 gives you, then upload two files: `google-services.json`, which is compiled into the build so the device can receive notifications, and a service account key, which lets Base44 send them on your behalf.
 
@@ -28,7 +26,9 @@ One operational detail worth planning around: people who already installed your 
 
 ## Does adding push notifications clear a guideline 4.2 rejection?
 
-No. Guideline 4.2 asks for features, content and UI that elevate the app beyond a repackaged website. Push is one input to that judgment, and Apple's standard 4.2 rejection letter singles it out by name as something that does not carry the app on its own.
+**No. Guideline 4.2 asks for features, content and UI that elevate the app beyond a repackaged website.**
+
+Push is one input to that judgment, and Apple's standard 4.2 rejection letter singles it out by name as something that does not carry the app on its own.
 
 The guideline text itself, [last updated June 8, 2026](https://developer.apple.com/app-store/review/guidelines/), is short:
 
@@ -40,13 +40,15 @@ The sentence people quote about push notifications is not in the guideline. It i
 
 That distinction matters. The rulebook states the standard. The letter tells you which specific additions reviewers have already decided do not meet it. If you are shipping a wrapper whose one native addition is push, the letter you are most likely to receive has a sentence in it about push.
 
-Guideline 4.2.2 sits underneath the same idea: other than catalogs, apps should not primarily be marketing materials, advertisements, web clippings, content aggregators, or a collection of links. For the full breakdown of both halves of a 4.2 rejection and how to clear each one, see our guide to [Base44 and guideline 4.2](/blog/base44-guideline-4-2).
+Guideline 4.2.2 sits underneath the same idea: other than catalogs, apps should not primarily be marketing materials, advertisements, web clippings, content aggregators, or a collection of links.
+
+Note that the guideline names 3 things, features, content and UI. Teams reading it after a rejection tend to fix only the first, add a capability, resubmit, and receive the same letter, because the interface half never changed. An app that navigates like a desktop website, with a sidebar, a hamburger menu or a cookie banner, reads as a website no matter what runs underneath it.
 
 ## Why is push a weaker differentiator than it used to be?
 
-Because the web platform caught up. Web Push has worked on iOS and iPadOS since 16.4 for web apps added to the Home Screen, and Safari 18.4 added Declarative Web Push. The Badging API and the Web Share API are available in the same context.
+**Because the web platform caught up. Web Push has worked on iOS and iPadOS since 16.4 for web apps added to the Home Screen, and Safari 18.4 added Declarative Web Push.**
 
-This is the part of the argument most wrapper marketing gets wrong, and getting it wrong is expensive, because any developer can dismantle the claim with one link. Push notifications are not something the web cannot do. Neither is location: the Geolocation API is standard and has been for well over a decade.
+The Badging API and the Web Share API are available in the same context. This is the part of the argument most wrapper marketing gets wrong, and getting it wrong is expensive, because any developer can dismantle the claim with one link. Push notifications are not something the web cannot do. Neither is location: the Geolocation API is standard and has been for well over a decade.
 
 So the useful question is not what a browser is technically capable of. It is the one a reviewer is actually asking: **what does the installed app experience add over opening the same site in Safari?** If the honest answer is "notifications and an icon," you have described a Home Screen web app with an App Store listing attached, and 4.2 exists precisely for that case.
 
@@ -77,7 +79,9 @@ None of these are magic. What they have in common is that they are integrations 
 
 ## Can push notifications be the feature your app depends on?
 
-No, and this is the trap that catches apps whose only native capability is push. Three separate guidelines constrain what you can do with it, and a wrapper leaning entirely on push tends to collide with at least one of them.
+**No, and this is the trap that catches apps whose only native capability is push.**
+
+Three separate guidelines constrain what you can do with it, and a wrapper leaning entirely on push tends to collide with at least one of them.
 
 **Guideline 4.5.4** states that push notifications must not be required for the app to function. If your onboarding dead-ends when a user declines the permission prompt, that is a rejection independent of 4.2.
 
@@ -89,19 +93,17 @@ Read together, the position is consistent: Apple treats push as an enhancement l
 
 ## What does the Base44 mobile app support today?
 
-A web view around your published Base44 app, plus push notifications. Base44's documentation is direct about the shape of it and about what is missing, which is worth reading before you plan a submission around it.
+**A web view around your published Base44 app, plus push notifications. Base44's documentation is direct about the shape of it and about what is missing, which is worth reading before you plan a submission around it.**
 
-From Base44's own store submission documentation:
+From Base44's own store submission documentation: - The mobile app runs your published app inside a secure web view, described as a lightweight native wrapper that opens only your app's URL
 
-*   The mobile app runs your published app inside a secure web view, described as a lightweight native wrapper that opens only your app's URL
-    
 *   Full offline mode and HealthKit are not supported
     
 *   Device permissions are set by an AI scan and are not editable in the Base44 interface
     
 *   The main entry URL is chosen automatically from your published app and cannot be changed for the app specifically
     
-*   Bundle ID and signing key are configured automatically and cannot be changed inside the generated IPA or AAB, which is worth understanding before you publish, since [the identifier is public and permanent](/blog/base44-bundle-id)
+*   Bundle ID and signing key are configured automatically and cannot be changed inside the generated IPA or AAB, and the package name follows a documented `com.base[app-id].app` format that is permanent and publicly visible in the Play Store URL
     
 *   For digital goods, Stripe is not permitted inside the mobile app, and a StoreKit and Play Billing integration is described as in progress
     
@@ -114,9 +116,9 @@ Base44's documentation also says the platform continues to expand native feature
 
 ## Does it matter that Despia only does this?
 
-It matters at the edges, and store submissions fail at the edges. Base44 is an AI app builder where the mobile wrapper is one feature among many. Despia's runtime has done nothing but this since 2011. Both are legitimate positions, and they produce different release cadences.
+**It matters at the edges, and store submissions fail at the edges. Base44 is an AI app builder where the mobile wrapper is one feature among many. Despia's runtime has done nothing but this since 2011.**
 
-The runtime started life in 2011 as Advanced WebView, built for agency client apps, and over 7,500 apps shipped on it before it became Despia in 2023. That period covers the introduction of guideline 4.2, several rewrites of the review rules, the arrival of App Tracking Transparency, the privacy manifest requirements, and two full generations of store submission tooling on both platforms. Watching those land, one after another, and keeping shipped apps compliant through each of them is not a feature you can add to a roadmap. It is just time.
+Both are legitimate positions, and they produce different release cadences. The runtime started life in 2011 as Advanced WebView, built for agency client apps, and over 7,500 apps shipped on it before it became Despia in 2023. That period covers the introduction of guideline 4.2, several rewrites of the review rules, the arrival of App Tracking Transparency, the privacy manifest requirements, and two full generations of store submission tooling on both platforms. Watching those land, one after another, and keeping shipped apps compliant through each of them is not a feature you can add to a roadmap. It is just time.
 
 That shows up in two places a builder actually feels.
 
@@ -128,9 +130,9 @@ None of this makes the built-in wrapper a bad choice. Fewer vendors is a genuine
 
 ## Who actually sends the notification?
 
-With the Base44 wrapper, Base44 does, using the APNs key and Firebase service account you upload. With Despia, OneSignal does, from an account you own and log into. That difference has almost nothing to do with delivery and almost everything to do with what surrounds the send.
+**With the Base44 wrapper, Base44 does, using the APNs key and Firebase service account you upload. With Despia, OneSignal does, from an account you own and log into.**
 
-Despia does not run its own push service, and that is a deliberate decision rather than a gap. The principle is narrow and easy to state: build the runtime, and integrate the category leader for everything else. Nobody needs a fifth-best notification backend bolted onto a mobile runtime, and building one would mean spending years rebuilding a product that already exists and is better than anything we would ship.
+That difference has almost nothing to do with delivery and almost everything to do with what surrounds the send. Despia does not run its own push service, and that is a deliberate decision rather than a gap. The principle is narrow and easy to state: build the runtime, and integrate the category leader for everything else. Nobody needs a fifth-best notification backend bolted onto a mobile runtime, and building one would mean spending years rebuilding a product that already exists and is better than anything we would ship.
 
 OneSignal has been building messaging infrastructure since 2014 and does nothing else. It describes itself as serving over 1 million businesses and delivering more than 12 billion messages a day. When you ship a Despia app, you onboard to OneSignal directly, which means you get the platform rather than an endpoint:
 
@@ -155,7 +157,9 @@ None of that is push infrastructure. It is the marketing and retention layer tha
 
 ## What happens when you need a feature the runtime has not shipped?
 
-For push, usually nothing, because the OneSignal REST API is available to you directly. You are not waiting on a wrapper method to be exposed for each field, and you are not filing a request for something OneSignal already supports.
+**For push, usually nothing, because the OneSignal REST API is available to you directly.**
+
+You are not waiting on a wrapper method to be exposed for each field, and you are not filing a request for something OneSignal already supports.
 
 That is the practical payoff of integrating an established provider instead of inventing one. Your backend calls OneSignal, and the full payload surface is yours:
 
@@ -193,7 +197,9 @@ If something reasonable is genuinely missing, [features@despia.com](mailto:featu
 
 ## How does the Despia runtime differ?
 
-Despia is a native runtime rather than a shell around a URL. Your Base44 app stays the source of truth, and native capabilities are called from that same web codebase through a single JavaScript function, with over 50 available.
+**Despia is a native runtime rather than a shell around a URL.**
+
+Your Base44 app stays the source of truth, and native capabilities are called from that same web codebase through a single JavaScript function, with over 50 available.
 
 |  | Base44 mobile app | Despia |
 | --- | --- | --- |
@@ -243,14 +249,16 @@ window.onRevenueCatPurchase = () => checkEntitlements()
 
 ## When is the Base44 wrapper the right call?
 
-When your app does not sell digital content, does not need to work offline, does not need biometrics or persistent credentials, and notifications genuinely are the only device integration your product design calls for.
+**When your app does not sell digital content, does not need to work offline, does not need biometrics or persistent credentials, and notifications genuinely are the only device integration your product design calls for.**
 
 That is a real category. An internal tool, a members area, a booking front end for a business that already has a website, a content app where the reviewer can see a clear reason to install it. If your app is substantial in its own right and push is a nice addition rather than the whole native story, the built-in path is fewer moving parts and fewer accounts to manage, and it is free of the Stripe constraint if you sell nothing digital in the app.
 
 Where it gets expensive is the case Base44 documents most clearly: you sell subscriptions. There is no compliant route through the built-in wrapper today, and no amount of push configuration changes that.
 
-## Ship one app, not two
+## What is the next step once the app is review-ready?
 
-Once the app itself is review-ready, the remaining problem is getting a compliant binary signed and onto both stores. Base44 can scan your app, generate the IPA and the AAB, and add push notifications, and for apps that need nothing else that may be all you require. Despia is what you reach for when in-app purchases, biometrics, persistent storage, offline or background audio are core to the product rather than optional, from the same Base44 codebase you already have.
+**Once the app itself is review-ready, the remaining problem is getting a compliant binary signed and onto both stores.**
+
+Base44 can scan your app, generate the IPA and the AAB, and add push notifications, and for apps that need nothing else that may be all you require. Despia is what you reach for when in-app purchases, biometrics, persistent storage, offline or background audio are core to the product rather than optional, from the same Base44 codebase you already have.
 
 [Learn more about Despia in the docs](https://setup.despia.com) or [start building at despia.com](https://despia.com).
