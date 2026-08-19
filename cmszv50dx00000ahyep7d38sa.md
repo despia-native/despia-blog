@@ -10,7 +10,7 @@ tags: ios, ios-app-developer, webview, ios-app-development, appstore, appreview
 
 ---
 
-Apple has no rule against WebViews. Guideline 5.6 rejections on web-built apps come from three things: an interface that looks like the tool that generated it, an app that adds nothing over your website, and a build a reviewer could not verify. Here is what clears each one.
+Apple has no rule against WebViews. Three things are worth checking first after a guideline 5.6 rejection on a web-built app: an interface that looks like the tool that generated it, an app that adds nothing over your website, and a build a reviewer could not verify.
 
 ## Does Apple reject apps for using a WebView?
 
@@ -19,6 +19,8 @@ No. There is no guideline against WebViews, and guideline **2.5.6** requires app
 The advice circulating online is that Apple rejects WebView apps, so you have to rebuild in Swift. That is wrong in a way that costs people months. WKWebView is also the foundation used by mainstream hybrid wrappers such as Capacitor and Cordova.
 
 What does get flagged is different. Guideline **5.6** is the Developer Code of Conduct, and a rejection under it arrives with language about a pattern of unusual behavior associated with fraudulent activity and features that appear to have been hidden during review. Unlike a purely technical rejection, it carries account-level implications, because Apple states that a Developer Program account will be terminated for actions not in accordance with the code, and that restoring it means a written statement of improvements Apple has to approve.
+
+For the full breakdown of what guideline 5.6 means at the account level, see our [guideline 5.6 rejection guide](/blog/guideline-5-6-rejection).
 
 References below are checked against the [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) as updated on June 8, 2026.
 
